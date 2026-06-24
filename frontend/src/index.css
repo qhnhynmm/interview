@@ -1,0 +1,118 @@
+:root {
+  /* Burgundy accent ramp. */
+  --burgundy-300: #f7a8b8;
+  --burgundy-400: #e85d75;
+  --burgundy-500: #be123c; /* primary burgundy */
+  --burgundy-600: #9f1239;
+  --burgundy-700: #7f1d1d;
+  --burgundy-800: #5f0f1b;
+
+  /* Soft burgundy fills/borders used on the dark surfaces */
+  --tint: rgba(190, 18, 60, 0.12);
+  --tint-2: rgba(190, 18, 60, 0.07);
+  --tint-border: rgba(190, 18, 60, 0.32);
+  --on-tint: #f4728b; /* accent text on tinted chips */
+
+  /* Semantic aliases used by the interview room / code panels */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--line);
+  --color-muted: var(--muted);
+  --color-text: var(--ink);
+  --color-accent: var(--burgundy-500);
+
+  /* Black / white neutrals */
+  --ink: #fff7f8; /* headings — near white */
+  --ink-2: #d8c2c7; /* body text */
+  --muted: #9a7b82;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-2: rgba(255, 255, 255, 0.05);
+  --surface: #160b0f; /* panels */
+  --surface-2: #201016; /* inputs, subtle fills */
+  --bg: #090407; /* page — near black */
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 12px 30px -16px rgba(0, 0, 0, 0.75);
+  --shadow-lg: 0 24px 60px -22px rgba(190, 18, 60, 0.35);
+
+  --radius: 14px;
+  --radius-lg: 22px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  color-scheme: dark;
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(900px 460px at 8% -8%, rgba(190, 18, 60, 0.18), transparent 60%),
+    radial-gradient(820px 420px at 100% 0%, rgba(127, 29, 29, 0.14), transparent 58%),
+    radial-gradient(700px 500px at 50% 120%, rgba(190, 18, 60, 0.08), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--on-tint);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 15px;
+}
+
+::placeholder {
+  color: #7f6068;
+}

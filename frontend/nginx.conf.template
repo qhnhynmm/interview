@@ -1,0 +1,43 @@
+server {
+    # AgentBase Runtime routes all traffic to port 8080.
+    listen 8080;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # AgentBase health probe — must return 200 for the runtime to reach ACTIVE.
+    location = /health {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    # Allow large interview recordings to pass through (default nginx cap is 1MB,
+    # which silently 413s the recording upload before it reaches the backend).
+    client_max_body_size 2g;
+
+    # Proxy API calls to the backend. Injected at container start (envsubst):
+    #   BACKEND_PROXY = full scheme://host  (local: http://backend:8000,
+    #                   AgentBase: https://endpoint-xxxx...vngcloud.vn)
+    #   BACKEND_HOST  = host only, used for the upstream Host header + TLS SNI.
+    # Same image works in both places; a resolvable default keeps nginx from
+    # dying at startup before the backend is wired.
+    location /api/ {
+        proxy_pass ${BACKEND_PROXY};
+        proxy_ssl_server_name on;
+        proxy_set_header Host ${BACKEND_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Stream large uploads straight to the backend instead of buffering the
+        # whole body first, and give long uploads room before timing out.
+        proxy_request_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+
+    # SPA fallback — all other routes serve index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

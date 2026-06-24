@@ -1,0 +1,26 @@
+{
+  "en": {
+    "title": "Interview Rules & Guidelines",
+    "subtitle": "Please read and acknowledge the following before starting.",
+    "items": [
+      "This system works best on Microsoft Edge or Google Chrome.",
+      "Camera and microphone must be enabled and will be recorded throughout the session.",
+      "Do not cheat or use any external assistance. The system actively monitors for suspicious behaviour in real time.",
+      "Your evaluation results will be available to HR after the interview session ends."
+    ],
+    "confirm": "I Understand — Continue",
+    "exit": "Exit"
+  },
+  "vi": {
+    "title": "Nội Quy Phỏng Vấn",
+    "subtitle": "Vui lòng đọc và xác nhận trước khi bắt đầu.",
+    "items": [
+      "Hệ thống hoạt động tốt nhất trên trình duyệt Microsoft Edge hoặc Google Chrome.",
+      "Bắt buộc bật camera và microphone trong suốt buổi phỏng vấn. Video của bạn sẽ được ghi lại.",
+      "Không được gian lận hoặc sử dụng tài liệu, thiết bị hỗ trợ bên ngoài. Hệ thống theo dõi và phát hiện hành vi vi phạm trong thời gian thực.",
+      "Kết quả đánh giá sẽ được gửi đến HR sau khi kết thúc buổi phỏng vấn."
+    ],
+    "confirm": "Tôi Đã Hiểu — Tiếp Tục",
+    "exit": "Thoát"
+  }
+}

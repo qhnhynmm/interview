@@ -1,0 +1,123 @@
+# AI-services configuration (non-secret defaults).
+#
+# Loaded by ai-services/app/config.py. Keep provider URLs, model names, ports,
+# and observability knobs here. OPENAI_API_KEY stays in repo-root .env.
+
+ai-services:
+  # Backend API base URL used by MCP interview tools. Local ai-services uses
+  # localhost; docker-compose overrides this to host.docker.internal.
+  backend_url: "http://localhost:8000"
+
+  # FastAPI + FastMCP bind.
+  mcp_host: "0.0.0.0"
+  mcp_port: 8001
+
+  # Planning Agent provider. OPENAI_API_KEY is env-only.
+  openai_base_url: "https://maas-llm-aiplatform-hcm.api.vngcloud.vn/v1"
+  planning_model: "google/gemma-4-31b-it"
+  planning_temperature: 0.4
+  # Tuned for the slow/variable MaaS gateway: cap output so each call stays short,
+  # and give a slow-but-progressing call room to finish (75s) instead of being
+  # killed early and retried from zero. ~1536 tokens fits the structured ~350-word
+  # interview/evaluation briefs (ordered topics + weighted competencies) with
+  # markdown headroom; bump this in lockstep if you raise the brief word budgets.
+  planning_max_tokens: 1536
+  planning_request_timeout: 75
+  # Analyst step (CV+JD → structured grounding facts). Routed separately so a
+  # STRONGER chat model can do the deep reading while Gemma still writes the
+  # briefs. Empty → falls back to planning_model. Put a beefier MaaS chat model
+  # here if one is available; otherwise leave empty (we still gain from the richer
+  # prompt + deterministic competency math).
+  planning_analyst_model: ""
+  # Analyst output is flat JSON with short evidence quotes — give it a bit more
+  # room than the old 700 so per-skill evidence is not truncated, but keep it
+  # tight so the gateway does not stall on a long body.
+  planning_analyst_max_tokens: 1100
+
+  # Assignment Agent provider (dedicated knobs, same provider as planning).
+  assignment_model: "google/gemma-4-31b-it"
+  assignment_temperature: 0.4
+  assignment_max_tokens: 8192
+  # Coding Assistant model (candidate-facing code helper). Same MaaS provider as
+  # the planning agent. Empty → falls back to planning_model.
+  coding_assistant_model: "google/gemma-4-31b-it"
+  coding_assistant_temperature: 0.3
+  coding_assistant_max_tokens: 2048
+
+  # Inspector (Judge) Agent — chấm điểm buổi phỏng vấn + sinh report PDF.
+  # Temperature thấp để điểm ổn định, so sánh được giữa ứng viên.
+  inspector_model: "google/gemma-4-31b-it"
+  inspector_temperature: 0.3
+  inspector_max_tokens: 4096
+
+  # Observability.
+  otel_enabled: false
+  otel_otlp_endpoint: "http://localhost:6006/v1/traces"
+  otel_console: false
+  otel_sensitive: true
+
+interview-agent:
+  # LiveKit room endpoint. API key/secret are env-only.
+  livekit_url: "ws://localhost:7880"
+
+  # Worker identity and session language.
+  agent_name: "interview-agent"
+  language: "en"
+
+  # ai-services MCP toolbox (SSE) and backend API.
+  mcp_sse_url: "http://localhost:8001/mcp/sse"
+  backend_url: "http://localhost:8000"
+
+  # LLM brain — OpenAI-compatible endpoint. OPENAI_API_KEY is env-only.
+  openai_base_url: "https://maas-llm-aiplatform-hcm.api.vngcloud.vn/v1"
+  openai_model: "minimax/minimax-m2.5"
+  # Keep spoken turns paced while leaving enough room to finish a sentence.
+  interview_temperature: 0.5
+  interview_max_tokens: 1000
+
+  # STT server (English). STT_API_KEY is env-only; use "local" for unauthenticated servers.
+  stt_base_url: "https://endpoint-226c603e-25a8-4553-8d72-cb188d90f7eb.agentbase-runtime.aiplatform.vngcloud.vn/v1"
+  stt_model: "SenseVoiceSmall"
+
+  # STT server (Vietnamese). STT_VI_API_KEY is env-only; use "local" for
+  # unauthenticated servers. PhoWhisper self-hosted.
+  stt_vi_base_url: "http://<STT_VI_HOST>:9000/v1"
+  stt_vi_model: "phowhisper-medium"
+
+  # TTS server (English) — remote self-hosted kokoro-fastapi. KOKORO_API_KEY is
+  # env-only. The base_url is a Cloudflare tunnel that changes on restart; update
+  # it here (or via the TTS_BASE_URL env var) when it does.
+  tts_base_url: "https://endpoint-cb82bfa1-f92e-4872-9baf-abf5b5bfc7cf.agentbase-runtime.aiplatform.vngcloud.vn/v1"
+  # Kokoro exposes the OpenAI-compatible tts-1 model id. Keep this on LiveKit's
+  # audio-stream request path, but use WAV framing so LiveKit does not flush
+  # partial raw PCM bytes at speech boundaries.
+  tts_model: "tts-1"
+  tts_voice: "af_bella"
+  tts_response_format: "wav"
+
+  # Vietnamese TTS adapter (self-hosted). TTS_VI_API_KEY is env-only; use "local"
+  # for unauthenticated servers. It uses the shared WAV response format above so
+  # English and Vietnamese follow the same stable audio path.
+  tts_vi_base_url: "http://<TTS_VI_HOST>:8881/v1"
+  tts_vi_model: "tts-1"
+  tts_vi_voice: "main"
+
+  # ========== SESSION TIMING ==========
+  # Duration & pacing configuration for the interview session.
+  duration_minutes: 15          # Interview duration in minutes
+  grace_minutes: 3              # Extra time after duration before hard end
+  max_silence_end_min: 3       # Max minutes of silence before ending as abandoned
+  dead_air_prompt_sec: 20      # Seconds of silence before re-prompting candidate
+  wrap_soon_minutes: 3          # Minutes before end to start wrapping up
+
+  # ========== VOICE/DETECTION ==========
+  # Voice activity detection and turn-taking settings.
+  silence_threshold_ms: 1500   # VAD silence threshold in milliseconds
+  barge_in: false              # Do not let candidate/noise interrupt the agent mid-sentence
+  endpointing_mode: "turn-detection"  # "turn-detection" or "vad"
+
+  # ========== PROCTORING ==========
+  # Cheating detection and reminder settings.
+  proctoring_cooldown_seconds: 15  # Seconds between spoken reminders
+  proctoring_max_violations: 5       # Violations before ending interview
+  proctoring_allow_interruptions: false  # Do not let candidate interrupt cheating warnings

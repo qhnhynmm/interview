@@ -1,0 +1,62 @@
+[
+  {
+    "id": "itv-2041",
+    "candidateName": "Tran Minh Anh",
+    "email": "minhanh.tran@email.com",
+    "role": "Senior Backend Engineer",
+    "seniority": "Senior",
+    "scheduledLabel": "May 24, 2026 · 09:30",
+    "meetingLink": "https://meet.interviewai.local/itv-2041",
+    "status": "Completed",
+    "score": 86,
+    "reportUrl": "/reports/itv-2041.pdf"
+  },
+  {
+    "id": "itv-2038",
+    "candidateName": "Nguyen Hoang Long",
+    "email": "long.nh@email.com",
+    "role": "Data Scientist",
+    "seniority": "Mid",
+    "scheduledLabel": "May 23, 2026 · 14:00",
+    "meetingLink": "https://meet.interviewai.local/itv-2038",
+    "status": "Completed",
+    "score": 78,
+    "reportUrl": "/reports/itv-2038.pdf"
+  },
+  {
+    "id": "itv-2052",
+    "candidateName": "Le Thu Ha",
+    "email": "ha.le@email.com",
+    "role": "Frontend Engineer",
+    "seniority": "Junior",
+    "scheduledLabel": "May 30, 2026 · 10:15",
+    "meetingLink": "https://meet.interviewai.local/itv-2052",
+    "status": "Scheduled",
+    "score": null,
+    "reportUrl": null
+  },
+  {
+    "id": "itv-2047",
+    "candidateName": "Pham Quoc Bao",
+    "email": "bao.pq@email.com",
+    "role": "DevOps Engineer",
+    "seniority": "Senior",
+    "scheduledLabel": "May 27, 2026 · 16:30",
+    "meetingLink": "https://meet.interviewai.local/itv-2047",
+    "status": "Completed",
+    "score": 91,
+    "reportUrl": "/reports/itv-2047.pdf"
+  },
+  {
+    "id": "itv-2055",
+    "candidateName": "Vo Thi Kim Ngan",
+    "email": "ngan.vtk@email.com",
+    "role": "Product Manager",
+    "seniority": "Lead",
+    "scheduledLabel": "Jun 02, 2026 · 11:00",
+    "meetingLink": "https://meet.interviewai.local/itv-2055",
+    "status": "Scheduled",
+    "score": null,
+    "reportUrl": null
+  }
+]

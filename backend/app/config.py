@@ -45,6 +45,49 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default=_YAML.get("jwt_algorithm", "HS256"))
     jwt_expire_minutes: int = Field(default=int(_YAML.get("jwt_expire_minutes", 1440)))
 
+    frontend_url: str = Field(default=_YAML.get("frontend_url", "http://localhost:5173"))
+    ai_service_url: str = Field(default=_YAML.get("ai_service_url", "http://localhost:8001"))
+    planning_endpoint: str = Field(default=_YAML.get("planning_endpoint", "/api/v1/planning/plan"))
+    ai_request_timeout: float = Field(default=float(_YAML.get("ai_request_timeout", 120.0)))
+
+    schedule_offset_minutes: int = Field(default=int(_YAML.get("schedule_offset_minutes", 30)))
+    max_concurrent_sessions: int = Field(default=int(_YAML.get("max_concurrent_sessions", 3)))
+    session_window_minutes: int = Field(default=int(_YAML.get("session_window_minutes", 18)))
+    slot_open_buffer_minutes: int = Field(default=int(_YAML.get("slot_open_buffer_minutes", 10)))
+    storage_dir: str = Field(default=_YAML.get("storage_dir", "data/storage"))
+
+    minio_enabled: bool = Field(default=False, validation_alias="MINIO_ENABLED")
+    minio_endpoint: str = Field(default=_YAML.get("minio_endpoint", "127.0.0.1:9000"))
+    minio_secure: bool = Field(default=bool(_YAML.get("minio_secure", False)))
+    minio_region: str = Field(default=_YAML.get("minio_region", "us-east-1"))
+    minio_bucket_cvs: str = Field(default=_YAML.get("minio_bucket_cvs", "cvs"))
+    minio_access_key: str = Field(default="", validation_alias="MINIO_ACCESS_KEY")
+    minio_secret_key: str = Field(default="", validation_alias="MINIO_SECRET_KEY")
+
+    gemini_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
+    gemini_model: str = Field(
+        default=_YAML.get("gemini_model", "gemini-2.0-flash"),
+        validation_alias="GEMINI_MODEL",
+    )
+    gemini_request_timeout: float = Field(
+        default=float(_YAML.get("gemini_request_timeout", 60.0)),
+        validation_alias="GEMINI_REQUEST_TIMEOUT",
+    )
+
+    @property
+    def minio_endpoint_url(self) -> str:
+        scheme = "https" if self.minio_secure else "http"
+        return f"{scheme}://{self.minio_endpoint}"
+
+    @property
+    def storage_path(self) -> Path:
+        p = Path(self.storage_dir)
+        return p if p.is_absolute() else REPO_ROOT / p
+
+    @property
+    def planning_url(self) -> str:
+        return f"{self.ai_service_url.rstrip('/')}{self.planning_endpoint}"
+
     @property
     def cors_origin_list(self) -> list[str]:
         raw = (self.cors_origins or "*").strip()

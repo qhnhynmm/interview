@@ -54,11 +54,15 @@ backend:
   # Object storage — boto3 S3-compatible (MinIO for dev, vStorage for prod).
   # Active values come from .env.dev or .env.prod (selected by DEPLOY_ENV).
   # These yaml defaults apply only when the env file does not set the variable.
-  minio_endpoint: "minio:9000"
+  minio_endpoint: "127.0.0.1:9000"
   minio_public_endpoint: "localhost:9000"
   minio_secure: false
   minio_region: "us-east-1"
   minio_bucket_cvs: "cvs"
+
+  # CV extraction (Gemini). GEMINI_API_KEY is env-only.
+  gemini_model: "gemini-2.0-flash"
+  gemini_request_timeout: 60.0
   minio_bucket_recordings: "recordings"
   minio_bucket_reports: "reports"
   recording_url_ttl: 604800

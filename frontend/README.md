@@ -153,6 +153,10 @@ frontend/
 └── public/
 ```
 
+## Tab Interview — Logic chi tiết
+
+Xem [INTERVIEW_TAB.md](./INTERVIEW_TAB.md) để hiểu luồng form → chọn slot → gọi backend → hiện meeting link.
+
 ## Ghi Chú Phát Triển
 
 - Giữ API calls đi qua `src/utils/*` để tránh phân tán logic auth/proxy.

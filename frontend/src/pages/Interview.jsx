@@ -24,7 +24,7 @@ function isNowSlot(isoStr) {
 }
 
 export default function Interview({ onCreate }) {
-  const [form, setForm] = useState(EMPTY)
+  const [form, setForm] = useState({ ...EMPTY })
   const [created, setCreated] = useState(null)
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -44,8 +44,6 @@ export default function Interview({ onCreate }) {
   function reveal(record) {
     setCreated(record)
     setCopied(false)
-    setForm(EMPTY)
-    if (fileRef.current) fileRef.current.value = ''
     setLoading(false)
     recordRef.current = null
     reasoningDoneRef.current = false

@@ -1,5 +1,5 @@
 // Bật mock API khi chưa có backend. Đổi thành false khi backend sẵn sàng.
-export const USE_MOCK_API = true
+export const USE_MOCK_API = false
 
 // Độ trễ giả lập network (ms).
 export const MOCK_DELAY_MS = 350

@@ -1,4 +1,5 @@
 import { API } from '@/constants/api.js'
+import { authHeaders } from '@/utils/auth.js'
 import { STATUS_MAP } from '@/constants/result.js'
 import { USE_MOCK_API } from '@/constants/mock.js'
 import { mockDelay } from '@/mocks/delay.js'
@@ -33,7 +34,7 @@ function normalize(r) {
     id: r.id,
     candidateName: r.candidate_name || 'Unknown',
     role: r.position || '—',
-    seniority: '',
+    seniority: r.seniority ?? '',
     scheduledAt,
     scheduledLabel: scheduledAt ? formatSchedule(scheduledAt) : '—',
     meetingLink: r.meeting_url || `${window.location.origin}/interview/${r.id}`,
@@ -51,12 +52,15 @@ export async function fetchSlots(hoursAhead = 8, fromDate = null) {
     return generateMockSlots(hoursAhead, fromDate)
   }
 
-  // let url = `${API}/interviews/slots?hours_ahead=${hoursAhead}`
-  // if (fromDate) url += `&from_utc=${encodeURIComponent(fromDate.toISOString())}`
-  // const res = await fetch(url)
-  // if (!res.ok) throw new Error('Failed to load available slots')
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  let url = `${API}/interviews/slots?hours_ahead=${hoursAhead}`
+  if (fromDate) url += `&from_utc=${encodeURIComponent(fromDate.toISOString())}`
+  const res = await fetch(url, { headers: authHeaders() })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    if (res.status === 401) throw new Error('Please sign in to view available slots')
+    throw new Error(err.detail || 'Failed to load available slots')
+  }
+  return res.json()
 }
 
 export async function loadInterviews() {
@@ -65,11 +69,10 @@ export async function loadInterviews() {
     return getMockInterviews().map(normalize)
   }
 
-  // const res = await fetch(`${API}/interviews`, { headers: authHeaders() })
-  // if (!res.ok) throw new Error('Failed to load interviews')
-  // const list = await res.json()
-  // return list.map(normalize)
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to load interviews')
+  const list = await res.json()
+  return list.map(normalize)
 }
 
 export async function submitInterview(form) {
@@ -105,27 +108,27 @@ export async function submitInterview(form) {
     }
   }
 
-  // const fd = new FormData()
-  // fd.append('candidate_name', form.candidateName.trim())
-  // if (form.email) fd.append('candidate_email', form.email.trim())
-  // fd.append('position', form.role.trim())
-  // fd.append('jd_text', form.jd.trim())
-  // if (form.requests) fd.append('special_requirements', form.requests.trim())
-  // fd.append('interview_language', form.language || 'en')
-  // if (form.cvFile) fd.append('cv_file', form.cvFile)
-  // if (form.scheduledAt) fd.append('scheduled_at', form.scheduledAt)
-  // const res = await fetch(`${API}/interviews/generate-link`, {
-  //   method: 'POST',
-  //   headers: authHeaders(),
-  //   body: fd,
-  // })
-  // if (!res.ok) {
-  //   const err = await res.json().catch(() => ({}))
-  //   throw new Error(err.detail || 'Failed to create interview')
-  // }
-  // const data = await res.json()
-  // ...
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const fd = new FormData()
+  fd.append('candidate_name', form.candidateName.trim())
+  if (form.email) fd.append('candidate_email', form.email.trim())
+  fd.append('position', form.role.trim())
+  fd.append('jd_text', form.jd.trim())
+  if (form.requests) fd.append('special_requirements', form.requests.trim())
+  fd.append('interview_language', form.language || 'en')
+  if (form.seniority) fd.append('seniority', form.seniority)
+  if (form.cvFile) fd.append('cv_file', form.cvFile)
+  if (form.scheduledAt) fd.append('scheduled_at', form.scheduledAt)
+  const res = await fetch(`${API}/interviews/generate-link`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: fd,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to create interview')
+  }
+  const data = await res.json()
+  return normalize(data)
 }
 
 export async function sendChat(interviewId, message) {
@@ -189,10 +192,9 @@ export async function fetchInterview(interviewId) {
     return getMockInterview(interviewId)
   }
 
-  // const res = await fetch(`${API}/interviews/${interviewId}`)
-  // if (!res.ok) throw new Error('Interview not found')
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${interviewId}`)
+  if (!res.ok) throw new Error('Interview not found')
+  return res.json()
 }
 
 export async function uploadChunk(interviewId, blob) {

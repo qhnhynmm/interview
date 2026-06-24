@@ -2,7 +2,9 @@
 
 FastAPI backend cho nền tảng phỏng vấn AI. Hiện tại đã có **authentication & authorization** (JWT).
 
-## Auth API
+## API
+
+### Auth
 
 | Method | Path | Mô tả |
 | --- | --- | --- |
@@ -10,6 +12,26 @@ FastAPI backend cho nền tảng phỏng vấn AI. Hiện tại đã có **authe
 | `POST` | `/api/v1/auth/login` | Đăng nhập (`email`, `password`) |
 | `GET` | `/api/v1/auth/me` | Lấy user hiện tại (Bearer token) |
 | `GET` | `/api/v1/auth/me/hr` | Route mẫu yêu cầu role HR |
+
+### Interviews (HR — Bearer token)
+
+| Method | Path | Mô tả |
+| --- | --- | --- |
+| `GET` | `/api/v1/interviews/slots` | Slot trống (`hours_ahead`, `from_utc`) |
+| `GET` | `/api/v1/interviews` | Danh sách interview của HR |
+| `POST` | `/api/v1/interviews/generate-link` | Tạo interview (multipart: CV + form) |
+
+### Interviews (public)
+
+| Method | Path | Mô tả |
+| --- | --- | --- |
+| `GET` | `/api/v1/interviews/{id}` | Chi tiết phòng phỏng vấn (candidate) |
+
+`POST /generate-link` gọi Planning Agent (`localhost:8001`); nếu AI chưa chạy, backend dùng **mock plan** có sẵn.
+
+CV (PDF/DOCX/TXT) được lưu vào **MinIO** bucket `cvs` khi `MINIO_ENABLED=true` (mặc định trong Docker Compose). Đường dẫn trong DB: `s3://cvs/{interview_id}/{filename}`.
+
+MinIO Console: http://localhost:9001
 
 Response token:
 

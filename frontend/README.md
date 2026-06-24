@@ -1,6 +1,6 @@
-# GreenTemis Frontend
+# Aurelia Frontend
 
-`frontend/` là giao diện web cho nền tảng GreenTemis Agent. Cùng một app phục vụ hai nhóm màn hình: workspace của HR để tạo và theo dõi phỏng vấn, và phòng phỏng vấn trực tiếp cho ứng viên khi mở meeting link.
+`frontend/` là giao diện web cho nền tảng Aurelia. Cùng một app phục vụ hai nhóm màn hình: workspace của HR để tạo và theo dõi phỏng vấn, và phòng phỏng vấn trực tiếp cho ứng viên khi mở meeting link.
 
 Frontend được viết bằng React + Vite, gọi backend qua `/api`, kết nối LiveKit cho audio/video realtime, ghi hình phiên phỏng vấn, chạy proctoring trong trình duyệt và hiển thị bài coding/cognitive assignment.
 

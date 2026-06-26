@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon, Spinner } from '@/components/icons.jsx'
 import RULES from '@/data/interviewRules.json'

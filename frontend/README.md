@@ -1,6 +1,16 @@
-# Aurelia Frontend
+# Aurelia Frontend (Next.js)
 
-`frontend/` là giao diện web cho nền tảng Aurelia. Cùng một app phục vụ hai nhóm màn hình: workspace của HR để tạo và theo dõi phỏng vấn, và phòng phỏng vấn trực tiếp cho ứng viên khi mở meeting link.
+> **Migrated from Vite + React SPA → Next.js 15 (App Router)** for proper SEO support.
+
+`frontend/` là giao diện web cho nền tảng Aurelia. 
+
+## SEO Highlights (Next.js)
+- Dynamic `generateMetadata` on `/interview/[id]` and `/candidate/[id]`
+- Root layout with title template, description, Open Graph
+- Server-rendered HTML shell for better crawling & social previews of interview links
+- Proper per-page titles like "Interview • itv-xxxx | Aurelia"
+
+The heavy realtime features (LiveKit, proctoring, editors) remain as Client Components. Cùng một app phục vụ hai nhóm màn hình: workspace của HR để tạo và theo dõi phỏng vấn, và phòng phỏng vấn trực tiếp cho ứng viên khi mở meeting link.
 
 Frontend được viết bằng React + Vite, gọi backend qua `/api`, kết nối LiveKit cho audio/video realtime, ghi hình phiên phỏng vấn, chạy proctoring trong trình duyệt và hiển thị bài coding/cognitive assignment.
 

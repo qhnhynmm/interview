@@ -11,8 +11,9 @@
 #   docker compose down        # giữ data
 #   docker compose down -v     # xóa volume PostgreSQL
 #
-# Frontend (terminal riêng):
+# Frontend (terminal riêng) — Now Next.js:
 #   cd frontend && npm run dev
+# Default dev port for Next.js is 3000 (update FRONTEND_URL if you change it)
 #
 # MinIO Console: http://localhost:9001 (user/pass = MINIO_ROOT_USER / MINIO_ROOT_PASSWORD)
 

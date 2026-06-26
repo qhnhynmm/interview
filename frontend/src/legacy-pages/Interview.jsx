@@ -1,3 +1,5 @@
+'use client'
+
 import { useRef, useState } from 'react'
 import { Icon, Spinner } from '../components/icons.jsx'
 import { ReasoningStream } from '../components/ReasoningStream.jsx'
@@ -100,7 +102,7 @@ export default function Interview({ onCreate }) {
         <span className="eyebrow">
           <Icon name="video" size={14} /> New interview
         </span>
-        <h1>Create a virtual interview</h1>
+        <h2>Create a virtual interview</h2>
         <p>
           Provide the candidate details, the job description and any special
           requests. Aurelia will plan the session and generate a meeting link with

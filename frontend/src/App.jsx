@@ -1,11 +1,13 @@
+'use client'
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { Icon } from './components/icons.jsx'
-import Home from './pages/Home.jsx'
-import Interview from './pages/Interview.jsx'
-import Result from './pages/Result.jsx'
-import LoginPage from './pages/LoginPage.jsx'
-import RegisterPage from './pages/RegisterPage.jsx'
+import Home from './legacy-pages/Home.jsx'
+import Interview from './legacy-pages/Interview.jsx'
+import Result from './legacy-pages/Result.jsx'
+import LoginPage from './legacy-pages/LoginPage.jsx'
+import RegisterPage from './legacy-pages/RegisterPage.jsx'
 import { loadInterviews, submitInterview } from './utils/interviews.js'
 import { fetchMe, logout } from './utils/auth.js'
 import { POLL_MS, TABS } from './constants/app.js'
@@ -13,10 +15,15 @@ import { POLL_MS, TABS } from './constants/app.js'
 const PROTECTED = new Set(['interview', 'result'])
 
 export default function App() {
-  const [tab, setTab] = useState(() => {
-    const p = new URLSearchParams(window.location.search).get('tab')
-    return p || 'home'
-  })
+  const [tab, setTab] = useState('home')
+
+  // Safe client-only initial tab from URL (prevents window is not defined during SSR)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('tab')
+      if (p) setTab(p)
+    }
+  }, [])
   const [interviews, setInterviews] = useState([])
   const [loadError, setLoadError] = useState(null)
   const [loading, setLoading] = useState(false)

@@ -1,3 +1,5 @@
+'use client'
+
 import { Icon } from '../components/icons.jsx'
 import { AGENTS, FLOW } from '../constants/home.js'
 
@@ -63,7 +65,7 @@ export default function Home({ onStart }) {
           <span className="eyebrow">
             <Icon name="route" size={14} /> The agent panel
           </span>
-          <h1>Meet the team behind Aurelia</h1>
+          <h2>Meet the team behind Aurelia</h2>
           <p>
             Every interview is run by four specialized agents, coordinated from a
             single plan so the whole panel stays consistent.

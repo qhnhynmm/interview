@@ -1,3 +1,5 @@
+'use client'
+
 import { useRef, useState } from 'react'
 import { Icon, Spinner } from '../components/icons.jsx'
 import { login } from '../utils/auth.js'

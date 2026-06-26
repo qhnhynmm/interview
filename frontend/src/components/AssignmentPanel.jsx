@@ -1,6 +1,8 @@
-import CodePanel from '@/components/CodePanel.jsx'
-import CognitivePanel from '@/components/CognitivePanel.jsx'
-import SandpackPanel from '@/components/SandpackPanel.jsx'
+import dynamic from 'next/dynamic'
+
+const CodePanel = dynamic(() => import('./CodePanel.jsx'), { ssr: false })
+const CognitivePanel = dynamic(() => import('./CognitivePanel.jsx'), { ssr: false })
+const SandpackPanel = dynamic(() => import('./SandpackPanel.jsx'), { ssr: false })
 
 // Normalize whatever assignment shape we have into { type, coding, cognitive }.
 // Accepts the structured Assignment object, or a legacy coding_assignment that

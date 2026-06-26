@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from 'react'
 import { Icon, Spinner } from '@/components/icons.jsx'
 import { fetchCandidate, subscribeToEvents } from '@/utils/interviews.js'

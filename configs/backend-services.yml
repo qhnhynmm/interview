@@ -61,7 +61,7 @@ backend:
   minio_bucket_cvs: "cvs"
 
   # CV extraction (Gemini). GEMINI_API_KEY is env-only.
-  gemini_model: "gemini-2.0-flash"
+  gemini_model: "gemini-3.1-flash-lite"
   gemini_request_timeout: 60.0
   minio_bucket_recordings: "recordings"
   minio_bucket_reports: "reports"

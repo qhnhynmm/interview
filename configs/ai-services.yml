@@ -12,9 +12,14 @@ ai-services:
   mcp_host: "0.0.0.0"
   mcp_port: 8001
 
-  # Planning Agent provider. OPENAI_API_KEY is env-only.
+  # LLM provider for Planning Agent (and other MAF agents).
+  # Prefer Gemini: set GEMINI_API_KEY in .env (OpenAI-compatible endpoint below).
+  # Alternative: OpenAI-compatible MaaS gateway via OPENAI_API_KEY + openai_base_url.
+  llm_provider: "gemini"
+  gemini_base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
+  gemini_model: "gemini-3.1-flash-lite"
   openai_base_url: "https://maas-llm-aiplatform-hcm.api.vngcloud.vn/v1"
-  planning_model: "google/gemma-4-31b-it"
+  planning_model: "gemini-3.1-flash-lite"
   planning_temperature: 0.4
   # Tuned for the slow/variable MaaS gateway: cap output so each call stays short,
   # and give a slow-but-progressing call room to finish (75s) instead of being
@@ -50,8 +55,9 @@ ai-services:
   inspector_temperature: 0.3
   inspector_max_tokens: 4096
 
-  # Observability.
-  otel_enabled: false
+  # Observability — Arize Phoenix UI at http://localhost:6006
+  # docker compose up -d phoenix
+  otel_enabled: true
   otel_otlp_endpoint: "http://localhost:6006/v1/traces"
   otel_console: false
   otel_sensitive: true

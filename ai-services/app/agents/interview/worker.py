@@ -3,6 +3,7 @@ import logging
 import sys
 
 from app.config import get_settings
+from app.infra.tracing import init_tracing, shutdown_tracing
 
 logger = logging.getLogger(__name__)
 
@@ -30,4 +31,9 @@ async def run_worker() -> None:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(run_worker())
+    settings = get_settings()
+    init_tracing(service_name=f"{settings.app_name}-worker")
+    try:
+        asyncio.run(run_worker())
+    finally:
+        shutdown_tracing()

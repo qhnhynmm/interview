@@ -29,7 +29,7 @@ class AgentBase:
         max_tokens: int,
         timeout: float,
     ) -> dict[str, Any] | None:
-        with trace_span(span, model=model):
+        with trace_span(span, kind="LLM", model=model):
             return await self.llm.chat_json(
                 model=model,
                 system=system,

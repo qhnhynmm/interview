@@ -40,10 +40,24 @@ class Settings(BaseSettings):
         validation_alias="BACKEND_URL",
     )
 
+    # LLM provider — Gemini (recommended) or any OpenAI-compatible gateway (MaaS).
+    gemini_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
+    gemini_base_url: str = Field(
+        default=_YAML.get(
+            "gemini_base_url",
+            "https://generativelanguage.googleapis.com/v1beta/openai/",
+        ),
+    )
+    gemini_model: str = Field(
+        default=_YAML.get("gemini_model", "gemini-3.1-flash-lite"),
+        validation_alias="GEMINI_MODEL",
+    )
+
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
     openai_base_url: str = Field(default=_YAML.get("openai_base_url", "https://api.openai.com/v1"))
+    llm_provider: str = Field(default=_YAML.get("llm_provider", "gemini"), validation_alias="LLM_PROVIDER")
 
-    planning_model: str = Field(default=_YAML.get("planning_model", "google/gemma-4-31b-it"))
+    planning_model: str = Field(default=_YAML.get("planning_model", "gemini-3.1-flash-lite"))
     planning_temperature: float = Field(default=float(_YAML.get("planning_temperature", 0.4)))
     planning_max_tokens: int = Field(default=int(_YAML.get("planning_max_tokens", 1536)))
     planning_request_timeout: float = Field(default=float(_YAML.get("planning_request_timeout", 75)))
@@ -62,8 +76,22 @@ class Settings(BaseSettings):
     inspector_temperature: float = Field(default=float(_YAML.get("inspector_temperature", 0.3)))
     inspector_max_tokens: int = Field(default=int(_YAML.get("inspector_max_tokens", 4096)))
 
-    otel_enabled: bool = Field(default=bool(_YAML.get("otel_enabled", False)))
-    otel_otlp_endpoint: str = Field(default=_YAML.get("otel_otlp_endpoint", "http://localhost:6006/v1/traces"))
+    otel_enabled: bool = Field(
+        default=bool(_YAML.get("otel_enabled", False)),
+        validation_alias="OTEL_ENABLED",
+    )
+    otel_otlp_endpoint: str = Field(
+        default=_YAML.get("otel_otlp_endpoint", "http://localhost:6006/v1/traces"),
+        validation_alias="OTEL_OTLP_ENDPOINT",
+    )
+    otel_console: bool = Field(
+        default=bool(_YAML.get("otel_console", False)),
+        validation_alias="OTEL_CONSOLE",
+    )
+    otel_sensitive: bool = Field(
+        default=bool(_YAML.get("otel_sensitive", True)),
+        validation_alias="OTEL_SENSITIVE",
+    )
 
     # Interview worker (separate process — see app/worker.py)
     livekit_url: str = Field(default=_INTERVIEW_YAML.get("livekit_url", "ws://localhost:7880"))
@@ -71,12 +99,46 @@ class Settings(BaseSettings):
     mcp_sse_url: str = Field(default=_INTERVIEW_YAML.get("mcp_sse_url", "http://localhost:8001/mcp/sse"))
 
     @property
+    def effective_llm_provider(self) -> str:
+        if self.gemini_api_key.strip():
+            return "gemini"
+        if self.openai_api_key.strip():
+            return "openai"
+        return (self.llm_provider or "gemini").strip().lower()
+
+    @property
+    def llm_api_key(self) -> str:
+        if self.effective_llm_provider == "gemini":
+            return self.gemini_api_key.strip()
+        return self.openai_api_key.strip()
+
+    @property
+    def llm_base_url(self) -> str:
+        if self.effective_llm_provider == "gemini":
+            return self.gemini_base_url.rstrip("/") + "/"
+        return self.openai_base_url.rstrip("/") + "/"
+
+    @property
     def llm_enabled(self) -> bool:
-        return bool(self.openai_api_key.strip())
+        return bool(self.llm_api_key)
+
+    @property
+    def planning_model_effective(self) -> str:
+        if self.effective_llm_provider == "gemini":
+            # Prefer GEMINI_MODEL env; yaml planning_model may lag behind API deprecations.
+            if self.gemini_model.strip():
+                return self.gemini_model.strip()
+            return self.planning_model
+        return self.planning_model
 
     @property
     def planning_analyst_effective_model(self) -> str:
-        return self.planning_analyst_model.strip() or self.planning_model
+        analyst = self.planning_analyst_model.strip()
+        if analyst:
+            if self.effective_llm_provider == "gemini" and analyst.startswith("google/"):
+                return self.gemini_model
+            return analyst
+        return self.planning_model_effective
 
 
 @lru_cache

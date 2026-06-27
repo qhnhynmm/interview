@@ -66,7 +66,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
     gemini_model: str = Field(
-        default=_YAML.get("gemini_model", "gemini-2.0-flash"),
+        default=_YAML.get("gemini_model", "gemini-3.1-flash-lite"),
         validation_alias="GEMINI_MODEL",
     )
     gemini_request_timeout: float = Field(

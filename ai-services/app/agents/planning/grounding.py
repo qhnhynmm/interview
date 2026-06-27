@@ -110,10 +110,17 @@ def merge_analyst_overlay(base: GroundingFacts, analyst: dict[str, Any]) -> Grou
         parsed: list[SkillEvidence] = []
         for row in analyst["skills_evidence"]:
             if isinstance(row, dict) and row.get("name"):
+                years_val = None
+                if row.get("years") is not None:
+                    try:
+                        years_raw = str(row["years"]).strip().rstrip("+")
+                        years_val = float(years_raw) if years_raw else None
+                    except (TypeError, ValueError):
+                        degraded = True
                 parsed.append(
                     SkillEvidence(
                         name=str(row["name"]),
-                        years=float(row["years"]) if row.get("years") is not None else None,
+                        years=years_val,
                         evidence=str(row.get("evidence", ""))[:200],
                     )
                 )

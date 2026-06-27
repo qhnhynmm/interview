@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from app.infra.tracing import set_span_attributes, span_error, span_ok, trace_span
 from app.mcp.tools import ALL_TOOLS
 
 logger = logging.getLogger(__name__)
@@ -28,15 +29,30 @@ def list_tools() -> dict[str, list[str]]:
 
 @router.post("/tools/call", response_model=ToolCallResponse)
 async def call_tool(body: ToolCallRequest) -> ToolCallResponse:
-    fn = ALL_TOOLS.get(body.name)
-    if fn is None:
-        raise HTTPException(status_code=404, detail=f"Unknown tool: {body.name}")
-    try:
-        result = await fn(**body.arguments)
-    except Exception as exc:
-        logger.exception("MCP tool %s failed", body.name)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return ToolCallResponse(name=body.name, result=result)
+    interview_id = body.arguments.get("interview_id")
+    with trace_span(
+        "mcp.tool",
+        kind="TOOL",
+        tool=body.name,
+        interview_id=interview_id,
+        argument_keys=sorted(body.arguments.keys()),
+        arguments=body.arguments,
+    ):
+        fn = ALL_TOOLS.get(body.name)
+        if fn is None:
+            raise HTTPException(status_code=404, detail=f"Unknown tool: {body.name}")
+        try:
+            result = await fn(**body.arguments)
+        except Exception as exc:
+            logger.exception("MCP tool %s failed", body.name)
+            span_error(exc)
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        set_span_attributes(
+            success=bool(result) if isinstance(result, dict) else True,
+            result=result,
+        )
+        span_ok()
+        return ToolCallResponse(name=body.name, result=result)
 
 
 @router.get("/sse")

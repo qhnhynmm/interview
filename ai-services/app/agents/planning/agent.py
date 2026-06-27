@@ -20,6 +20,7 @@ from app.agents.planning.prompts import (
     EVALUATION_BRIEF_SYSTEM,
     INTERVIEW_BRIEF_SYSTEM,
 )
+from app.infra.tracing import set_span_attributes, span_ok, trace_span
 from app.schemas.plan import GroundingFacts, InterviewPlan, PlanRequest
 from app.skills.interview_planning.scripts.planning_tools import duration_for_seniority
 
@@ -131,25 +132,57 @@ async def _generate_brief(
     fallback_fn,
     degraded_counter: list[int],
 ) -> str:
-    started = time.perf_counter()
-    raw = await llm.run_agent(name=name, instructions=system, user_message=context)
-    if raw:
-        text = _strip_code_fences(raw)
-        logger.info("brief %s generated in %.2fs (%d chars)", name, time.perf_counter() - started, len(text))
-        return text
+    with trace_span(f"planning.brief.{name}", kind="CHAIN", step=name):
+        started = time.perf_counter()
+        raw = await llm.run_agent(name=name, instructions=system, user_message=context)
+        if raw:
+            text = _strip_code_fences(raw)
+            elapsed = time.perf_counter() - started
+            set_span_attributes(
+                degraded=False,
+                output_chars=len(text),
+                latency_ms=round(elapsed * 1000, 1),
+            )
+            logger.info("brief %s generated in %.2fs (%d chars)", name, elapsed, len(text))
+            return text
 
-    degraded_counter[0] += 1
-    logger.info("brief %s degraded to fallback", name)
-    return fallback_fn()
+        degraded_counter[0] += 1
+        set_span_attributes(degraded=True)
+        logger.info("brief %s degraded to fallback", name)
+        return fallback_fn()
 
 
 async def run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict]:
     """Main orchestrator: keyword grounding → analyst LLM → 3 sequential brief LLMs."""
+    with trace_span(
+        "planning.run",
+        kind="AGENT",
+        agent="planning",
+        position=request.position,
+        candidate_name=request.candidate_name,
+        language=request.language,
+    ):
+        return await _run_planning_agent(request)
+
+
+async def _run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict]:
     llm = PlanningLLM()
     degraded_briefs = [0]
 
-    _, _, keyword_facts = run_keyword_grounding(request)
-    facts = await _semantic_grounding(llm, request, keyword_facts)
+    with trace_span("planning.keyword_grounding", kind="CHAIN", step="keyword_grounding"):
+        _, _, keyword_facts = run_keyword_grounding(request)
+        set_span_attributes(
+            match_score=keyword_facts.match_score,
+            seniority=keyword_facts.seniority_level,
+            domain=keyword_facts.domain,
+        )
+
+    with trace_span("planning.semantic_grounding", kind="CHAIN", step="planning_analyst"):
+        facts = await _semantic_grounding(llm, request, keyword_facts)
+        set_span_attributes(
+            analyst_degraded=facts.analyst_degraded,
+            skill_gaps=len(facts.skill_gaps),
+        )
 
     context = _build_shared_context(request, facts)
 
@@ -205,6 +238,13 @@ async def run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict]
         "match_score": facts.match_score,
         "skill_gaps": facts.skill_gaps,
     }
+    set_span_attributes(
+        source=source,
+        degraded_briefs=degraded_briefs[0],
+        analyst_degraded=facts.analyst_degraded,
+        match_score=facts.match_score,
+    )
+    span_ok(f"plan source={source}")
     return plan, meta
 
 

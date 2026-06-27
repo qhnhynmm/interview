@@ -20,6 +20,10 @@
 # AI Services (Planning Agent — tùy chọn):
 #   docker compose up -d ai-services
 #   curl http://localhost:8001/health
+#
+# Agent tracing (Arize Phoenix):
+#   docker compose up -d phoenix
+#   UI: http://localhost:6006
 
 services:
   minio:
@@ -74,8 +78,14 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-aurelia}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-aurelia-secret}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://localhost:8001}
+
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: aurelia-phoenix
+    restart: unless-stopped
+    network_mode: host
 
   ai-services:
     build:
@@ -85,9 +95,17 @@ services:
     container_name: aurelia-ai-services
     restart: unless-stopped
     network_mode: host
+    depends_on:
+      phoenix:
+        condition: service_started
     environment:
       BACKEND_URL: http://127.0.0.1:8000
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OTEL_ENABLED: "true"
+      OTEL_OTLP_ENDPOINT: http://127.0.0.1:6006/v1/traces
+      OTEL_SENSITIVE: "true"
 
 volumes:
   postgres_data:

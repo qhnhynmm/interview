@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default=_YAML.get("jwt_algorithm", "HS256"))
     jwt_expire_minutes: int = Field(default=int(_YAML.get("jwt_expire_minutes", 1440)))
 
-    frontend_url: str = Field(default=_YAML.get("frontend_url", "http://localhost:5173"))
+    frontend_url: str = Field(default=_YAML.get("frontend_url", "http://localhost:3000"))
     ai_service_url: str = Field(default=_YAML.get("ai_service_url", "http://localhost:8001"))
     planning_endpoint: str = Field(default=_YAML.get("planning_endpoint", "/api/v1/planning/plan"))
     ai_request_timeout: float = Field(default=float(_YAML.get("ai_request_timeout", 120.0)))

@@ -2,11 +2,9 @@ import JsonLd from '@/app/components/JsonLd'
 import { fetchInterview } from '@/lib/interview'
 import InterviewRoomClient from './InterviewRoomClient'
 
-const fetchInterviewForMeta = fetchInterview
-
 export async function generateMetadata({ params }) {
-  const { id } = params
-  const data = await fetchInterviewForMeta(id)
+  const { id } = await params
+  const data = await fetchInterview(id)
 
   const candidate = data?.candidate_name || 'Candidate'
   const position = data?.position || 'Position'
@@ -53,8 +51,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function InterviewPage({ params }) {
-  const { id } = params
-  const data = await fetchInterviewForMeta(id)
+  const { id } = await params
+  const data = await fetchInterview(id)
 
   // Advanced Structured Data: JobPosting + Interview context
   const jobSchema = data

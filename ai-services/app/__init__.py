@@ -1,0 +1,1 @@
+"""Aurelia AI Services — REST agents + MCP toolbox."""

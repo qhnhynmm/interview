@@ -14,8 +14,8 @@ async function fetchData(id: string) {
   return fetchInterview(id)
 }
 
-export default async function Image({ params }: { params: { id: string } }) {
-  const { id } = params
+export default async function Image({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const data = await fetchData(id) || {}
 
   const candidate = data?.candidate_name || 'Candidate'

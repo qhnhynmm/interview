@@ -19,7 +19,7 @@ function minutesAgo(n) {
 }
 
 function meetingUrl(id) {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
   return `${origin}/interview/${id}`
 }
 

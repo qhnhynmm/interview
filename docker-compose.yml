@@ -16,6 +16,10 @@
 # Default dev port for Next.js is 3000 (update FRONTEND_URL if you change it)
 #
 # MinIO Console: http://localhost:9001 (user/pass = MINIO_ROOT_USER / MINIO_ROOT_PASSWORD)
+#
+# AI Services (Planning Agent — tùy chọn):
+#   docker compose up -d ai-services
+#   curl http://localhost:8001/health
 
 services:
   minio:
@@ -64,7 +68,7 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET:-dev-change-me-in-production}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-aurelia}:${POSTGRES_PASSWORD:-aurelia}@127.0.0.1:5432/${POSTGRES_DB:-aurelia}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       MINIO_ENABLED: "true"
       MINIO_ENDPOINT: 127.0.0.1:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-aurelia}
@@ -72,6 +76,18 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://localhost:8001}
+
+  ai-services:
+    build:
+      context: .
+      dockerfile: ai-services/Dockerfile.api
+      network: host
+    container_name: aurelia-ai-services
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      BACKEND_URL: http://127.0.0.1:8000
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 
 volumes:
   postgres_data:

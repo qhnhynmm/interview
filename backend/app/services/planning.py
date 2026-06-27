@@ -77,6 +77,7 @@ async def fetch_interview_plan(
         "jd_text": jd_text,
         "special_requirements": special_requirements,
         "language": language,
+        "cv_markdown": cv_text,
         "cv_text": cv_text,
         "candidate_name": candidate_name,
     }

@@ -8,7 +8,6 @@ export async function fetchInterview(id: string) {
   try {
     const base = getBackendUrl()
     const res = await fetch(`${base}/api/v1/interviews/${id}`, {
-      next: { revalidate: 30 },
       cache: 'no-store',
     })
     if (!res.ok) return null

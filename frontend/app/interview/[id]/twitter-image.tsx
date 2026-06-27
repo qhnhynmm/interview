@@ -6,8 +6,9 @@ export const alt = 'Aurelia AI Interview'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-export default async function TwitterImage({ params }: { params: { id: string } }) {
-  const data = await fetchInterview(params.id)
+export default async function TwitterImage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const data = await fetchInterview(id)
 
   const candidate = data?.candidate_name || 'Candidate'
   const position = data?.position || 'Role'

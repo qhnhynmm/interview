@@ -1,0 +1,9 @@
+{
+  "input": {
+    "position": "Backend Engineer",
+    "jd_text": "Backend Engineer (Mid) — 3+ years. Must: Python, FastAPI, PostgreSQL, Redis. Nice: Kubernetes.",
+    "cv_markdown": "# Alex Nguyen\n## VinPay (2021–2024)\n- Built Python/FastAPI payment APIs (~2M req/day)\n- PostgreSQL performance tuning\n- Docker CI/CD; no production Kubernetes yet",
+    "special_requirements": "Probe Redis caching design and Kubernetes operational readiness"
+  },
+  "notes": "POST /api/v1/planning/plan — expect skill_gaps to include redis and/or kubernetes"
+}

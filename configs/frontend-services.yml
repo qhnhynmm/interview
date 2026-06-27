@@ -4,7 +4,7 @@
 # non-secret defaults — never put API keys or credentials here.
 
 frontend:
-  dev_port: 5173
+  dev_port: 3000
 
   # Backend API proxy target (used by Vite dev server so the browser never
   # hits the backend directly and avoids CORS issues during development).

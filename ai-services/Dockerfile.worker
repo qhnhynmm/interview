@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+COPY configs/ai-services.yml configs/ai-services.yml
+COPY ai-services/requirements.txt ai-services/requirements.txt
+RUN --network=host pip install --no-cache-dir -r ai-services/requirements.txt
+# Optional LiveKit deps — uncomment when voice worker is ready:
+# RUN pip install livekit-agents livekit-plugins-openai
+
+COPY ai-services/ ai-services/
+
+WORKDIR /app/ai-services
+
+CMD ["python", "-m", "app.worker"]

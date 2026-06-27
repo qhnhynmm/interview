@@ -88,7 +88,7 @@ Frontend không cần `.env` riêng khi chạy local. Cấu hình không secret 
 
 ```yaml
 frontend:
-  dev_port: 5173
+  dev_port: 3000
   backend_url: "http://localhost:8000"
 
 proctoring:
@@ -107,7 +107,7 @@ npm install
 npm run dev
 ```
 
-Mở <http://localhost:5173>.
+Mở <http://localhost:3000>.
 
 Các script khác:
 

@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     planning_analyst_model: str = Field(default=_YAML.get("planning_analyst_model", "") or "")
     planning_analyst_max_tokens: int = Field(default=int(_YAML.get("planning_analyst_max_tokens", 1100)))
 
-    assignment_model: str = Field(default=_YAML.get("assignment_model", "google/gemma-4-31b-it"))
+    assignment_model: str = Field(default=_YAML.get("assignment_model", "gemini-3.1-flash-lite"))
     assignment_temperature: float = Field(default=float(_YAML.get("assignment_temperature", 0.4)))
     assignment_max_tokens: int = Field(default=int(_YAML.get("assignment_max_tokens", 8192)))
 
@@ -130,6 +130,12 @@ class Settings(BaseSettings):
                 return self.gemini_model.strip()
             return self.planning_model
         return self.planning_model
+
+    @property
+    def assignment_model_effective(self) -> str:
+        if self.effective_llm_provider == "gemini" and self.gemini_model.strip():
+            return self.gemini_model.strip()
+        return self.assignment_model
 
     @property
     def planning_analyst_effective_model(self) -> str:

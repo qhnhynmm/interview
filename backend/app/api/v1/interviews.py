@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -9,10 +10,16 @@ from app.config import get_settings
 from app.database import get_db
 from app.models.interview import Interview, InterviewStatus, new_interview_id
 from app.models.user import User
-from app.schemas.interview import InterviewDetail, InterviewListItem, SlotsResponse
+from app.schemas.interview import InterviewDetail, InterviewListItem, JoinTokenResponse, SlotsResponse
 from app.services.cv_extractor import extract_cv
+from app.services.assignment import fetch_assignment
 from app.services.planning import fetch_interview_plan
 from app.services.slots import generate_slots, instant_available
+from app.services.livekit_tokens import (
+    assert_join_allowed,
+    build_join_token_response,
+    mark_candidate_joined,
+)
 from app.services.storage import save_cv
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
@@ -21,6 +28,15 @@ router = APIRouter(prefix="/interviews", tags=["interviews"])
 def _meeting_url(interview_id: str) -> str:
     settings = get_settings()
     return f"{settings.frontend_url.rstrip('/')}/interview/{interview_id}"
+
+
+def _assistant_enabled(row: Interview) -> bool:
+    assignment = row.assignment or {}
+    coding = assignment.get("coding") or {}
+    if "ai_assistant_enabled" in coding:
+        return bool(coding["ai_assistant_enabled"])
+    legacy = (row.plan or {}).get("coding_assignment") or {}
+    return bool(legacy.get("ai_assistant_enabled", True))
 
 
 def _to_list_item(row: Interview) -> InterviewListItem:
@@ -48,7 +64,7 @@ def _to_detail(row: Interview) -> InterviewDetail:
         status=row.status.value,
         scheduled_at=row.scheduled_at,
         meeting_url=_meeting_url(row.id),
-        assistant_enabled=bool(row.plan.get("coding_assignment", {}).get("ai_assistant_enabled", True)),
+        assistant_enabled=_assistant_enabled(row),
         assignment_finished=row.assignment_finished,
         plan=row.plan or {},
         assignment=row.assignment,
@@ -89,6 +105,27 @@ def list_interviews(
         .order_by(Interview.created_at.desc())
     ).all()
     return [_to_list_item(row) for row in rows]
+
+
+@router.get("/{interview_id}/join-token", response_model=JoinTokenResponse)
+def join_token(
+    interview_id: str,
+    role: Literal["candidate", "agent"] = Query("candidate"),
+    db: Session = Depends(get_db),
+) -> JoinTokenResponse:
+    row = db.get(Interview, interview_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+
+    assert_join_allowed(row)
+    if role == "candidate":
+        if mark_candidate_joined(row):
+            db.add(row)
+            db.commit()
+            db.refresh(row)
+
+    payload = build_join_token_response(row, role=role)  # type: ignore[arg-type]
+    return JoinTokenResponse(**payload)
 
 
 @router.get("/{interview_id}", response_model=InterviewDetail)
@@ -149,6 +186,15 @@ async def generate_link(
         cv_text=cv_text,
         candidate_name=name,
     )
+    assignment = await fetch_assignment(
+        interview_id=interview_id,
+        position=role,
+        seniority=level,
+        jd_text=jd,
+        cv_text=cv_text,
+        assignment_brief=(plan or {}).get("assignment_brief", ""),
+        special_requirements=requests,
+    )
 
     row = Interview(
         id=interview_id,
@@ -167,6 +213,7 @@ async def generate_link(
         scheduled_at=parsed_at,
         status=InterviewStatus.scheduled,
         plan=plan,
+        assignment=assignment,
     )
     db.add(row)
     db.commit()

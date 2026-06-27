@@ -48,7 +48,20 @@ class Settings(BaseSettings):
     frontend_url: str = Field(default=_YAML.get("frontend_url", "http://localhost:3000"))
     ai_service_url: str = Field(default=_YAML.get("ai_service_url", "http://localhost:8001"))
     planning_endpoint: str = Field(default=_YAML.get("planning_endpoint", "/api/v1/planning/plan"))
+    assignment_endpoint: str = Field(
+        default=_YAML.get("assignment_endpoint", "/api/v1/assignment/generate"),
+    )
     ai_request_timeout: float = Field(default=float(_YAML.get("ai_request_timeout", 120.0)))
+
+    livekit_url: str = Field(default=_YAML.get("livekit_url", "ws://127.0.0.1:7880"))
+    livekit_public_url: str = Field(
+        default=_YAML.get("livekit_public_url", "ws://127.0.0.1:7880"),
+        validation_alias="LIVEKIT_PUBLIC_URL",
+    )
+    livekit_api_key: str = Field(default="", validation_alias="LIVEKIT_API_KEY")
+    livekit_api_secret: str = Field(default="", validation_alias="LIVEKIT_API_SECRET")
+    livekit_token_ttl: int = Field(default=int(_YAML.get("livekit_token_ttl", 14400)))
+    livekit_agent_name: str = Field(default=_YAML.get("livekit_agent_name", "interview-agent"))
 
     schedule_offset_minutes: int = Field(default=int(_YAML.get("schedule_offset_minutes", 30)))
     max_concurrent_sessions: int = Field(default=int(_YAML.get("max_concurrent_sessions", 3)))

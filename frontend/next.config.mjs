@@ -1,5 +1,8 @@
 import path from 'path'
 
+// Docker build: BACKEND_URL=http://127.0.0.1:8000 (host network, same as backend container)
+const backendUrl = (process.env.BACKEND_URL || 'http://localhost:8000').replace(/\/$/, '')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Support the existing @/ alias (matches jsconfig)
@@ -18,7 +21,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ]
   },

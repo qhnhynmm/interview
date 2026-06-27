@@ -127,5 +127,5 @@ def test_get_interview_public(client: TestClient):
     assert detail.status_code == 200
     body = detail.json()
     assert body["id"] == created["id"]
-    assert body["plan"]["coding_assignment"]["title"] == "Two Sum"
-    assert body["assistant_enabled"] is True
+    assert body["assignment"]["coding"]["title"] == "Two Sum"
+    assert body["assistant_enabled"] is False

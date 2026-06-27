@@ -1,3 +1,3 @@
-from app.agents.assignment.agent import AssignmentAgent
+from app.agents.assignment.agent import AssignmentAgent, run_assignment_agent
 
-__all__ = ["AssignmentAgent"]
+__all__ = ["AssignmentAgent", "run_assignment_agent"]

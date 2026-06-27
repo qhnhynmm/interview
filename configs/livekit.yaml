@@ -1,0 +1,24 @@
+# LiveKit — local development (Aurelia interview rooms).
+# Keys must match LIVEKIT_API_KEY / LIVEKIT_API_SECRET in repo .env.
+# Docs: https://docs.livekit.io/transport/self-hosting/local/
+
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  # Local/docker dev — do not discover public IP via STUN.
+  use_external_ip: false
+
+keys:
+  # Secret must be >= 32 chars (LiveKit server validation).
+  devkey: aurelia_dev_livekit_secret_32chars_min
+
+room:
+  auto_create: true
+  empty_timeout: 600
+  departure_timeout: 30
+
+logging:
+  level: info

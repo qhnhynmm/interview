@@ -1,0 +1,21 @@
+{
+  "type": "coding",
+  "summary": "DSA screening for Backend Engineer — verifies algorithmic thinking without AI assist.",
+  "coding": {
+    "mode": "dsa",
+    "title": "Two Sum",
+    "difficulty": "easy",
+    "statement": "Given an integer array `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume each input has exactly one solution.",
+    "function_name": "two_sum",
+    "starter_code": "def two_sum(nums: list[int], target: int) -> list[int]:\n    \"\"\"Return indices of two numbers that add up to target.\"\"\"\n    pass\n",
+    "starter_files": {},
+    "test_cases": [
+      {"label": "Basic", "inputs": [[2, 7, 11, 15], 9], "expected": [0, 1]},
+      {"label": "Two elements", "inputs": [[3, 3], 6], "expected": [0, 1]}
+    ],
+    "ai_assistant_enabled": false,
+    "allowed_resources": ["Python standard library"]
+  },
+  "cognitive": null,
+  "source": "assignment-agent"
+}

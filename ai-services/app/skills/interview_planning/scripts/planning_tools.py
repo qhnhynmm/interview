@@ -55,19 +55,39 @@ def match_skills(cv_markdown: str, required_skills: list[str]) -> SkillMatchResu
     )
 
 
-def search_problem_bank(domain: Domain, level: SeniorityLevel) -> ProblemBankEntry | None:
+def _problem_bank_chain(domain: Domain, level: SeniorityLevel) -> list[tuple[Domain, str]]:
     norm = _normalize_level(level)
-    chain: list[tuple[Domain, str]] = [
+    return [
         (domain, norm),
         (domain, "mid"),
         ("backend", norm),
         ("backend", "mid"),
     ]
-    for key in chain:
+
+
+def search_problem_bank(domain: Domain, level: SeniorityLevel) -> ProblemBankEntry | None:
+    for key in _problem_bank_chain(domain, level):
         entries = PROBLEM_BANK.get(key)
         if entries:
             return entries[0]
     return None
+
+
+def search_problem_bank_list(domain: str, level: str) -> list[dict]:
+    """Return all matching bank problems as dicts (MAF tool + Assignment Agent)."""
+    dom: Domain = domain if domain in DOMAIN_SKILLS else "backend"  # type: ignore[assignment]
+    if domain not in ("backend", "frontend", "data", "devops", "ai"):
+        dom = "backend"
+    lvl: SeniorityLevel = level if level in _LEVEL_ALIASES else "mid"  # type: ignore[assignment]
+    seen: set[str] = set()
+    results: list[dict] = []
+    for key in _problem_bank_chain(dom, lvl):
+        for entry in PROBLEM_BANK.get(key, []):
+            if entry.title in seen:
+                continue
+            seen.add(entry.title)
+            results.append(entry.model_dump())
+    return results
 
 
 def build_assignment_directive(

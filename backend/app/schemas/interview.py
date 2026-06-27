@@ -29,6 +29,12 @@ class InterviewListItem(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class JoinTokenResponse(BaseModel):
+    token: str
+    livekit_url: str
+    room_name: str
+
+
 class InterviewDetail(BaseModel):
     id: str
     candidate_name: str

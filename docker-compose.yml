@@ -3,17 +3,27 @@
 # Linux: dùng network_mode: host để API (8000) và DB (5432) lộ thẳng ra localhost,
 # tránh lỗi Docker port-forward gây "NetworkError" trên Swagger/browser.
 #
-# Usage:
+# Khởi động TẤT CẢ (khuyến nghị):
+#   cp .env.example .env    # chỉnh GEMINI_API_KEY, JWT_SECRET nếu cần
 #   docker compose up -d --build
-#   curl http://localhost:8000/health
+#   open http://localhost:8080        # frontend
+#   open http://localhost:8000/docs   # backend API
+#   open http://localhost:9001        # MinIO console
+#
+# Thêm agent tracing (cần pull image Phoenix — có thể timeout nếu Docker Hub chậm):
+#   docker compose --profile observability up -d phoenix
 #
 # Dừng:
 #   docker compose down        # giữ data
 #   docker compose down -v     # xóa volume PostgreSQL
 #
-# Frontend (terminal riêng) — Now Next.js:
+# Frontend (Next.js production container — port 8080):
+#   docker compose up -d --build frontend
+#   open http://localhost:8080
+#
+# Hoặc dev local (hot reload, port 3000):
 #   cd frontend && npm run dev
-# Default dev port for Next.js is 3000 (update FRONTEND_URL if you change it)
+#   đặt FRONTEND_URL=http://localhost:3000 trong .env
 #
 # MinIO Console: http://localhost:9001 (user/pass = MINIO_ROOT_USER / MINIO_ROOT_PASSWORD)
 #
@@ -21,9 +31,12 @@
 #   docker compose up -d ai-services
 #   curl http://localhost:8001/health
 #
-# Agent tracing (Arize Phoenix):
-#   docker compose up -d phoenix
-#   UI: http://localhost:6006
+# LiveKit (voice rooms — Phase 0):
+#   docker compose up -d livekit
+#   ./scripts/verify-livekit.sh
+#   WebSocket: ws://localhost:7880  |  API keys: devkey / secret (see .env.example)
+#
+# Agent tracing UI (tùy chọn): http://localhost:6006
 
 services:
   minio:
@@ -72,7 +85,7 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET:-dev-change-me-in-production}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-aurelia}:${POSTGRES_PASSWORD:-aurelia}@127.0.0.1:5432/${POSTGRES_DB:-aurelia}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
       MINIO_ENABLED: "true"
       MINIO_ENDPOINT: 127.0.0.1:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-aurelia}
@@ -80,8 +93,32 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://localhost:8001}
+      LIVEKIT_URL: ${LIVEKIT_URL:-ws://127.0.0.1:7880}
+      LIVEKIT_PUBLIC_URL: ${LIVEKIT_PUBLIC_URL:-ws://127.0.0.1:7880}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      network: host
+      args:
+        BACKEND_URL: ${BACKEND_PROXY_URL:-http://127.0.0.1:8000}
+        NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-http://localhost:8080}
+    container_name: aurelia-frontend
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      BACKEND_URL: ${BACKEND_PROXY_URL:-http://127.0.0.1:8000}
+      PORT: "8080"
+      HOSTNAME: 0.0.0.0
 
   phoenix:
+    profiles: ["observability"]
     image: arizephoenix/phoenix:latest
     container_name: aurelia-phoenix
     restart: unless-stopped
@@ -95,17 +132,26 @@ services:
     container_name: aurelia-ai-services
     restart: unless-stopped
     network_mode: host
-    depends_on:
-      phoenix:
-        condition: service_started
     environment:
       BACKEND_URL: http://127.0.0.1:8000
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LIVEKIT_URL: ${LIVEKIT_URL:-ws://127.0.0.1:7880}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
       OTEL_ENABLED: "true"
       OTEL_OTLP_ENDPOINT: http://127.0.0.1:6006/v1/traces
       OTEL_SENSITIVE: "true"
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: aurelia-livekit
+    restart: unless-stopped
+    network_mode: host
+    command: ["--config", "/etc/livekit.yaml", "--bind", "0.0.0.0"]
+    volumes:
+      - ./configs/livekit.yaml:/etc/livekit.yaml:ro
 
 volumes:
   postgres_data:

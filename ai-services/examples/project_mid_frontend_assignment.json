@@ -1,0 +1,25 @@
+{
+  "type": "coding",
+  "summary": "Project sandbox for Frontend Engineer — probes practical UI implementation with AI assist enabled.",
+  "coding": {
+    "mode": "project",
+    "title": "Component State Panel",
+    "difficulty": "medium",
+    "statement": "## Component State Panel\n**Role context**: Mini frontend task for Frontend Engineer.\n### What to build\nBuild a simple chat-style UI that appends user messages to a scrollable panel.\n### Acceptance criteria\n- [ ] Typing and clicking Send adds a message bubble\n- [ ] Empty input does not add messages\n- [ ] Layout remains readable on a narrow viewport\n### Notes\n- You are encouraged to use the AI assistant.\n",
+    "function_name": "App",
+    "starter_code": "import { useState } from 'react';\nimport './styles.css';\n\nexport default function App() {\n  const [messages, setMessages] = useState([]);\n  const [input, setInput] = useState('');\n\n  const send = () => {\n    if (!input.trim()) return;\n    setMessages((prev) => [...prev, { role: 'user', text: input.trim() }]);\n    setInput('');\n  };\n\n  return (\n    <div className=\"app\">\n      <h1 className=\"title\">Component State Panel</h1>\n      <div className=\"chat\">\n        {messages.map((m, i) => (\n          <div key={i} className=\"msg\">{m.text}</div>\n        ))}\n      </div>\n      <div className=\"composer\">\n        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder=\"Type...\" />\n        <button onClick={send}>Send</button>\n      </div>\n    </div>\n  );\n}\n",
+    "starter_files": {
+      "App.js": "import { useState } from 'react';\nimport './styles.css';\n\nexport default function App() {\n  const [messages, setMessages] = useState([]);\n  const [input, setInput] = useState('');\n\n  const send = () => {\n    if (!input.trim()) return;\n    setMessages((prev) => [...prev, { role: 'user', text: input.trim() }]);\n    setInput('');\n  };\n\n  return (\n    <div className=\"app\">\n      <h1 className=\"title\">Component State Panel</h1>\n      <div className=\"chat\">\n        {messages.map((m, i) => (\n          <div key={i} className=\"msg\">{m.text}</div>\n        ))}\n      </div>\n      <div className=\"composer\">\n        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder=\"Type...\" />\n        <button onClick={send}>Send</button>\n      </div>\n    </div>\n  );\n}\n",
+      "styles.css": ".app { font-family: system-ui; padding: 1rem; max-width: 640px; margin: 0 auto; }\n.title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; }\n.chat { min-height: 200px; border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem; }\n.msg { padding: 0.35rem 0; }\n.composer { display: flex; gap: 0.5rem; margin-top: 0.75rem; }\ninput { flex: 1; padding: 0.5rem; }\nbutton { padding: 0.5rem 1rem; }\n"
+    },
+    "test_cases": [
+      {"label": "Messages render", "inputs": [], "expected": "User messages appear in the chat panel."},
+      {"label": "Empty guard", "inputs": [], "expected": "Blank input does not create a message."},
+      {"label": "Responsive layout", "inputs": [], "expected": "UI stays usable on narrow screens."}
+    ],
+    "ai_assistant_enabled": true,
+    "allowed_resources": ["React (built-in)", "Tailwind CDN classes", "AI assistant"]
+  },
+  "cognitive": null,
+  "source": "assignment-agent+fallback"
+}

@@ -1,0 +1,71 @@
+{
+  "type": "cognitive",
+  "summary": "10-question aptitude test calibrated for Marketing Manager.",
+  "coding": null,
+  "cognitive": {
+    "topic": "Marketing Manager judgement & reasoning",
+    "questions": [
+      {
+        "prompt": "A campaign CTR dropped 20% week-over-week. What is the BEST first step?",
+        "options": ["Pause all ads", "Check tracking/data pipeline", "Double the budget", "Change brand logo"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "A stakeholder demands a feature that conflicts with compliance. You should:",
+        "options": ["Ship quietly", "Escalate with documented risk", "Ignore compliance", "Quit immediately"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "Two priorities are due today with one owner. Best approach?",
+        "options": ["Multitask both halfway", "Rank by impact and sequence", "Ask candidate to choose randomly", "Delay both"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "A metric improved but revenue fell. Likely explanation?",
+        "options": ["Metric is a vanity proxy", "Revenue always follows", "Sample size too large", "Calendar effect only"],
+        "answer": "A",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "Customer complaint volume rose 15% after a UI change. Next step?",
+        "options": ["Revert without analysis", "Segment complaints and correlate with UI paths", "Disable support", "Increase prices"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "You have 3 hours before a demo and a broken build. You:",
+        "options": ["Rewrite architecture", "Identify minimal fix path and communicate risk", "Cancel demo silently", "Blame another team"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "A/B test shows +2% lift, p=0.21. Decision?",
+        "options": ["Ship winner immediately", "Treat as inconclusive; extend test or revisit hypothesis", "Fire analyst", "Change significance after the fact"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "Budget cut 30%. Best portfolio response?",
+        "options": ["Cut everything evenly", "Prioritize by ROI and strategic bets", "Stop measurement", "Hire more contractors"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "New hire underperforms at 60 days. First action?",
+        "options": ["Terminate", "Clarify expectations with specific examples and support plan", "Ignore", "Public criticism"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      },
+      {
+        "prompt": "Data shows funnel drop at step 3. You:",
+        "options": ["Optimize step 1 only", "Investigate step 3 friction with qualitative + quantitative signals", "Remove step 3", "Buy more traffic"],
+        "answer": "B",
+        "explanation": "Measures structured reasoning under role constraints."
+      }
+    ]
+  },
+  "source": "assignment-agent+fallback"
+}

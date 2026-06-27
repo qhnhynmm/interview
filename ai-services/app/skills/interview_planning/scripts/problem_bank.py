@@ -1,100 +1,147 @@
-from app.schemas.plan import Difficulty, Domain, ProblemBankEntry
+from app.schemas.plan import Domain, ProblemBankEntry
 
-# Verified reference problems — difficulty calibration only (Assignment Agent generates real tasks).
+# Verified DSA reference problems — Assignment Agent copies test_cases verbatim for DSA mode.
 
 PROBLEM_BANK: dict[tuple[Domain, str], list[ProblemBankEntry]] = {
     ("backend", "junior"): [
         ProblemBankEntry(
-            title="Valid Parentheses",
+            title="Two Sum",
             difficulty="easy",
-            statement="Given a string of brackets, return True if valid.",
-            function_name="is_valid",
-            starter_code="def is_valid(s: str) -> bool:\n    pass\n",
+            statement=(
+                "Given an integer array `nums` and an integer `target`, return indices of the "
+                "two numbers such that they add up to `target`.\n\n"
+                "You may assume each input has exactly one solution."
+            ),
+            function_name="two_sum",
+            starter_code=(
+                "def two_sum(nums: list[int], target: int) -> list[int]:\n"
+                '    """Return indices of two numbers that add up to target."""\n'
+                "    pass\n"
+            ),
             test_cases=[
-                {"input": {"s": "()"}, "expected": True},
-                {"input": {"s": "([)]"}, "expected": False},
+                {"label": "Basic", "inputs": [[2, 7, 11, 15], 9], "expected": [0, 1]},
+                {"label": "Two elements", "inputs": [[3, 3], 6], "expected": [0, 1]},
             ],
         ),
     ],
     ("backend", "mid"): [
         ProblemBankEntry(
-            title="LRU Cache",
+            title="Longest Substring Without Repeating Characters",
             difficulty="medium",
-            statement="Design an LRU cache with get and put in O(1).",
-            function_name="LRUCache",
-            starter_code="class LRUCache:\n    def __init__(self, capacity: int):\n        pass\n",
+            statement=(
+                "Given a string `s`, return the length of the longest substring "
+                "without repeating characters."
+            ),
+            function_name="length_of_longest_substring",
+            starter_code=(
+                "def length_of_longest_substring(s: str) -> int:\n"
+                '    """Return length of longest substring without repeats."""\n'
+                "    pass\n"
+            ),
             test_cases=[
-                {"input": {"ops": [["put", 1, 1], ["get", 1]]}, "expected": [None, 1]},
-            ],
-        ),
-        ProblemBankEntry(
-            title="Rate Limiter API",
-            difficulty="medium",
-            statement="Implement a sliding-window rate limiter for HTTP handlers.",
-            function_name="allow_request",
-            starter_code="def allow_request(user_id: str, ts: int) -> bool:\n    pass\n",
-            test_cases=[
-                {"input": {"user_id": "u1", "ts": 1}, "expected": True},
+                {"label": "Classic", "inputs": ["abcabcbb"], "expected": 3},
+                {"label": "Single char repeat", "inputs": ["bbbbb"], "expected": 1},
+                {"label": "Empty", "inputs": [""], "expected": 0},
             ],
         ),
     ],
     ("backend", "senior"): [
         ProblemBankEntry(
-            title="Consistent Hash Ring",
+            title="LRU Cache",
             difficulty="hard",
-            statement="Implement add/remove node and key lookup on a consistent hash ring.",
-            function_name="lookup",
-            starter_code="class HashRing:\n    def __init__(self, nodes):\n        pass\n",
+            statement=(
+                "Design a data structure for a Least Recently Used (LRU) cache.\n"
+                "Implement `LRUCache` class with `get(key)` and `put(key, value)` in O(1)."
+            ),
+            function_name="LRUCache",
+            starter_code=(
+                "class LRUCache:\n"
+                "    def __init__(self, capacity: int):\n"
+                "        pass\n\n"
+                "    def get(self, key: int) -> int:\n"
+                "        pass\n\n"
+                "    def put(self, key: int, value: int) -> None:\n"
+                "        pass\n"
+            ),
             test_cases=[
-                {"input": {"key": "user:42"}, "expected": "node-a"},
-            ],
-        ),
-    ],
-    ("frontend", "mid"): [
-        ProblemBankEntry(
-            title="Debounced Search",
-            difficulty="medium",
-            statement="Implement a debounced async search hook with cancellation.",
-            function_name="useDebouncedSearch",
-            starter_code="export function useDebouncedSearch(fn, delayMs) {\n  // TODO\n}\n",
-            test_cases=[
-                {"input": {"queries": ["a", "ab"]}, "expected": 1},
-            ],
-        ),
-    ],
-    ("data", "mid"): [
-        ProblemBankEntry(
-            title="Sessionize Events",
-            difficulty="medium",
-            statement="Group sorted events into sessions when gap > 30 minutes.",
-            function_name="sessionize",
-            starter_code="def sessionize(events):\n    pass\n",
-            test_cases=[
-                {"input": {"events": [{"t": 0}, {"t": 10}, {"t": 50}]}, "expected": 2},
-            ],
-        ),
-    ],
-    ("devops", "senior"): [
-        ProblemBankEntry(
-            title="Rolling Deploy Safety",
-            difficulty="hard",
-            statement="Simulate a rolling deploy with max unavailable and health checks.",
-            function_name="simulate_rollout",
-            starter_code="def simulate_rollout(instances, batch):\n    pass\n",
-            test_cases=[
-                {"input": {"instances": 6, "batch": 2}, "expected": 3},
+                {
+                    "label": "Put and get",
+                    "inputs": [[["put", 1, 1], ["put", 2, 2], ["get", 1], ["put", 3, 3], ["get", 2]]],
+                    "expected": [None, None, 1, None, -1],
+                },
             ],
         ),
     ],
     ("ai", "mid"): [
         ProblemBankEntry(
-            title="RAG Chunk Ranker",
+            title="Simple RAG Retrieval",
             difficulty="medium",
-            statement="Re-rank retrieved chunks by BM25 + embedding cosine hybrid score.",
-            function_name="rerank",
-            starter_code="def rerank(query, chunks, k=5):\n    pass\n",
+            statement=(
+                "Implement `retrieve(query, documents, k)` returning top-k document indices "
+                "by counting token overlap between query and each document (case-insensitive)."
+            ),
+            function_name="retrieve",
+            starter_code=(
+                "def retrieve(query: str, documents: list[str], k: int) -> list[int]:\n"
+                '    """Return indices of top-k documents by token overlap."""\n'
+                "    pass\n"
+            ),
             test_cases=[
-                {"input": {"query": "latency", "chunks": ["cache", "latency SLO"]}, "expected": 2},
+                {
+                    "label": "Overlap ranking",
+                    "inputs": ["payment api latency", ["payment service", "frontend css", "api gateway"], 2],
+                    "expected": [0, 2],
+                },
+            ],
+        ),
+    ],
+    ("frontend", "mid"): [
+        ProblemBankEntry(
+            title="Debounce Function",
+            difficulty="medium",
+            statement="Implement `debounce(fn, delay_ms)` that delays invoking `fn` until after `delay_ms` has elapsed since the last call.",
+            function_name="debounce",
+            starter_code=(
+                "def debounce(fn, delay_ms):\n"
+                '    """Return a debounced callable."""\n'
+                "    pass\n"
+            ),
+            test_cases=[
+                {"label": "Single trailing call", "inputs": [], "expected": "Only last rapid call fires after delay."},
+            ],
+        ),
+    ],
+    ("data", "mid"): [
+        ProblemBankEntry(
+            title="Sessionize Event Stream",
+            difficulty="medium",
+            statement="Group sorted events (each has `t` in minutes) into sessions when gap > 30 minutes.",
+            function_name="sessionize",
+            starter_code="def sessionize(events: list[dict]) -> int:\n    pass\n",
+            test_cases=[
+                {"label": "Two sessions", "inputs": [[{"t": 0}, {"t": 10}, {"t": 50}]], "expected": 2},
+            ],
+        ),
+    ],
+    ("devops", "mid"): [
+        ProblemBankEntry(
+            title="Resolve Config Overrides",
+            difficulty="medium",
+            statement=(
+                "Given base config dict and ordered override layers, return merged config "
+                "(later layers win on key conflicts)."
+            ),
+            function_name="resolve_config",
+            starter_code=(
+                "def resolve_config(base: dict, overrides: list[dict]) -> dict:\n"
+                "    pass\n"
+            ),
+            test_cases=[
+                {
+                    "label": "Layered override",
+                    "inputs": [{"timeout": 30}, [{"timeout": 60}, {"retries": 3}]],
+                    "expected": {"timeout": 60, "retries": 3},
+                },
             ],
         ),
     ],

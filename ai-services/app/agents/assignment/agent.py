@@ -19,6 +19,7 @@ from app.agents.assignment.domain.normalize import _STYLES_IMPORT_RE, normalize_
 from app.agents.assignment.domain.prompts import SYSTEM_INSTRUCTIONS, build_user_prompt
 from app.agents.assignment.domain.tools import search_problem_bank
 from app.config import Settings, get_settings
+from app.infra.progress import ProgressFn
 from app.schemas.assignment import Assignment, AssignmentRequest
 from app.schemas.plan import AssignmentDirective
 from app.skills.interview_planning.scripts.planning_tools import search_problem_bank as get_bank_entry
@@ -117,9 +118,25 @@ def _resolve_directive(req: AssignmentRequest) -> tuple[AssignmentDirective, Any
     return directive, resolved
 
 
-async def run_assignment_agent(req: AssignmentRequest) -> tuple[Assignment, dict]:
+async def _emit_progress(progress: ProgressFn | None, agent: str, text: str) -> None:
+    if progress is not None:
+        await progress(agent, text)
+
+
+async def run_assignment_agent(
+    req: AssignmentRequest,
+    *,
+    progress: ProgressFn | None = None,
+) -> tuple[Assignment, dict]:
     settings = get_settings()
     directive, resolved = _resolve_directive(req)
+    role = req.position or "the role"
+    level = resolved.level or req.level or "Mid"
+    await _emit_progress(
+        progress,
+        "Assignment",
+        f"Directive received — designing a {level}-level task for {role}.",
+    )
     meta: dict[str, Any] = {
         "agent": "assignment",
         "domain": resolved.domain,
@@ -133,15 +150,22 @@ async def run_assignment_agent(req: AssignmentRequest) -> tuple[Assignment, dict
 
     # DSA: deterministic from verified problem bank (test_cases verbatim)
     if directive.type == "coding" and directive.mode == "dsa":
+        await _emit_progress(progress, "Assignment", "Searching the problem bank for a difficulty reference…")
         entry = get_bank_entry(resolved.domain, resolved.level)  # type: ignore[arg-type]
         if entry is None:
             raise ValueError(f"No problem bank entry for {resolved.domain}/{resolved.level}")
         summary = f"DSA screening for {req.position or 'role'} — verifies algorithmic thinking without AI assist."
         assignment = build_dsa_assignment(entry=entry, directive=directive, summary=summary)
         meta["path"] = "deterministic-dsa"
+        await _emit_progress(progress, "Assignment", "Assignment drafted and returned to Planning.")
         return assignment, meta
 
     if not settings.llm_enabled:
+        await _emit_progress(
+            progress,
+            "Assignment",
+            "Calibrating scope, time limit and AI-assistant policy…",
+        )
         assignment = build_fallback_assignment(
             directive=directive,
             resolved=resolved,
@@ -149,8 +173,14 @@ async def run_assignment_agent(req: AssignmentRequest) -> tuple[Assignment, dict
             assignment_brief=req.assignment_brief,
         )
         meta["path"] = "fallback-no-llm"
+        await _emit_progress(progress, "Assignment", "Assignment drafted and returned to Planning.")
         return assignment, meta
 
+    await _emit_progress(
+        progress,
+        "Assignment",
+        "Calibrating scope, time limit and AI-assistant policy…",
+    )
     last_error: Exception | None = None
     for attempt in range(3):
         meta["parse_attempts"] = attempt + 1
@@ -162,6 +192,7 @@ async def run_assignment_agent(req: AssignmentRequest) -> tuple[Assignment, dict
             _validate_assignment_rules(assignment, directive)
             meta["path"] = "maf-llm"
             logger.info("assignment agent ok on attempt %d", attempt + 1)
+            await _emit_progress(progress, "Assignment", "Assignment drafted and returned to Planning.")
             return assignment, meta
         except Exception as exc:
             last_error = exc
@@ -177,6 +208,7 @@ async def run_assignment_agent(req: AssignmentRequest) -> tuple[Assignment, dict
         )
         meta["path"] = "fallback-after-llm-fail"
         meta["error"] = str(last_error)
+        await _emit_progress(progress, "Assignment", "Assignment drafted and returned to Planning.")
         return assignment, meta
     except Exception as fallback_exc:
         raise ValueError(f"Assignment agent failed: {last_error}") from fallback_exc

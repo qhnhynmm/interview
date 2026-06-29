@@ -74,12 +74,17 @@ interview-agent:
   mcp_sse_url: "http://localhost:8001/mcp/sse"
   backend_url: "http://localhost:8000"
 
-  # LLM brain — OpenAI-compatible endpoint. OPENAI_API_KEY is env-only.
-  openai_base_url: "https://maas-llm-aiplatform-hcm.api.vngcloud.vn/v1"
-  openai_model: "minimax/minimax-m2.5"
-  # Keep spoken turns paced while leaving enough room to finish a sentence.
+  # Voice stack — Gemini Live API (native audio in/out, no separate STT/TTS).
+  # Requires GEMINI_API_KEY in .env (passed to google.realtime.RealtimeModel).
+  # Docs: https://docs.livekit.io/agents/models/realtime/plugins/gemini/
+  live_model: "gemini-2.5-flash-native-audio-preview-12-2025"
+  live_voice: "Puck"
   interview_temperature: 0.5
   interview_max_tokens: 1000
+
+  # Legacy cascade stack (STT → LLM → TTS) — unused when live_model is set.
+  openai_base_url: "https://maas-llm-aiplatform-hcm.api.vngcloud.vn/v1"
+  openai_model: "minimax/minimax-m2.5"
 
   # STT server (English). STT_API_KEY is env-only; use "local" for unauthenticated servers.
   stt_base_url: "https://endpoint-226c603e-25a8-4553-8d72-cb188d90f7eb.agentbase-runtime.aiplatform.vngcloud.vn/v1"

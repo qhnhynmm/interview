@@ -128,7 +128,7 @@ export default function App() {
   }, [tab, refresh])
 
   async function handleCreate(form) {
-    const record = await submitInterview(form)
+    const record = form.__record ?? (await submitInterview(form))
     setInterviews((list) => [record, ...list])
     return record
   }

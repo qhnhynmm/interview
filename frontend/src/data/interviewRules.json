@@ -1,26 +1,28 @@
 {
   "en": {
-    "title": "Interview Rules & Guidelines",
-    "subtitle": "Please read and acknowledge the following before starting.",
+    "title": "Interview rules",
+    "subtitle": "Please read before you begin. This session is monitored.",
     "items": [
-      "This system works best on Microsoft Edge or Google Chrome.",
-      "Camera and microphone must be enabled and will be recorded throughout the session.",
-      "Do not cheat or use any external assistance. The system actively monitors for suspicious behaviour in real time.",
-      "Your evaluation results will be available to HR after the interview session ends."
+      "Stay on this tab for the entire interview. Switching tabs or opening other apps may be flagged.",
+      "Keep your face visible on camera. Looking away for extended periods may be flagged.",
+      "No phones, notes, or second person in frame — automated checks are active during the session.",
+      "Use only one display. An external monitor may be flagged.",
+      "Your camera and microphone are recorded for review by HR."
     ],
-    "confirm": "I Understand — Continue",
-    "exit": "Exit"
+    "confirm": "I understand — continue",
+    "exit": "Leave"
   },
   "vi": {
-    "title": "Nội Quy Phỏng Vấn",
-    "subtitle": "Vui lòng đọc và xác nhận trước khi bắt đầu.",
+    "title": "Quy định phỏng vấn",
+    "subtitle": "Vui lòng đọc trước khi bắt đầu. Phiên này được giám sát.",
     "items": [
-      "Hệ thống hoạt động tốt nhất trên trình duyệt Microsoft Edge hoặc Google Chrome.",
-      "Bắt buộc bật camera và microphone trong suốt buổi phỏng vấn. Video của bạn sẽ được ghi lại.",
-      "Không được gian lận hoặc sử dụng tài liệu, thiết bị hỗ trợ bên ngoài. Hệ thống theo dõi và phát hiện hành vi vi phạm trong thời gian thực.",
-      "Kết quả đánh giá sẽ được gửi đến HR sau khi kết thúc buổi phỏng vấn."
+      "Ở lại tab phỏng vấn suốt buổi. Chuyển tab hoặc mở ứng dụng khác có thể bị ghi nhận.",
+      "Giữ khuôn mặt trong khung camera. Nhìn ra ngoài quá lâu có thể bị ghi nhận.",
+      "Không dùng điện thoại, ghi chú hoặc có người thứ hai — hệ thống tự động kiểm tra gian lận.",
+      "Chỉ dùng một màn hình. Màn hình phụ có thể bị ghi nhận.",
+      "Camera và micro được ghi lại để HR đánh giá."
     ],
-    "confirm": "Tôi Đã Hiểu — Tiếp Tục",
-    "exit": "Thoát"
+    "confirm": "Tôi đã hiểu — tiếp tục",
+    "exit": "Rời khỏi"
   }
 }

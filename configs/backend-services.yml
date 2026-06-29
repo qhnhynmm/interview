@@ -31,10 +31,13 @@ backend:
   # LiveKit interview rooms. NOTE: livekit_api_key / livekit_api_secret are
   # secrets and are read from env ONLY (never put them here).
   livekit_url: "ws://localhost:7880"
-  livekit_public_url: "ws://localhost:7880"
+  livekit_public_url: "ws://127.0.0.1:7880"
   livekit_token_ttl: 14400
   livekit_agent_name: "interview-agent"
-  frontend_url: "http://localhost:3000"
+  frontend_url: "http://localhost:8080"
+  # Production (bật lại khi deploy aurelia.io.vn):
+  # livekit_public_url: "wss://livekit.aurelia.io.vn"
+  # frontend_url: "https://aurelia.io.vn"
 
   # Schedule freshly generated interviews this many minutes in the future
   # (used when no explicit scheduled_at is requested).

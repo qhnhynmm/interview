@@ -1,3 +1,8 @@
+import os
+
+# Must override repo .env postgres URL before app.database imports the engine.
+os.environ["DATABASE_URL"] = "sqlite://"
+
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -14,23 +19,32 @@ from app.main import app
 from app.models.interview import Interview, InterviewStatus
 from app.models.user import User
 
-SQLALCHEMY_TEST_URL = "sqlite://"
-engine = create_engine(
-    SQLALCHEMY_TEST_URL,
+_test_engine = create_engine(
+    "sqlite://",
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestSession = sessionmaker(autocommit=False, autoflush=False, bind=_test_engine)
 
 
 @pytest.fixture()
-def client():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
+def db_session():
+    import app.models  # noqa: F401
 
+    Base.metadata.create_all(bind=_test_engine)
+    db = TestSession()
+    try:
+        yield db
+    finally:
+        db.close()
+        Base.metadata.drop_all(bind=_test_engine)
+
+
+@pytest.fixture()
+def client(db_session):
     def override_get_db():
         try:
-            yield db
+            yield db_session
         finally:
             pass
 
@@ -38,8 +52,6 @@ def client():
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
-    Base.metadata.drop_all(bind=engine)
-    db.close()
 
 
 @pytest.fixture(autouse=True)
@@ -87,14 +99,13 @@ def _seed_interview(
     return row
 
 
-def test_join_token_success(client: TestClient):
+def test_join_token_success(client: TestClient, db_session):
     headers = _auth_headers(client)
     client.get("/api/v1/interviews/slots", headers=headers)
 
-    db = TestingSessionLocal()
-    hr_user = db.scalar(select(User))
+    hr_user = db_session.scalar(select(User))
     assert hr_user is not None
-    row = _seed_interview(db, hr_user, "itv-jointest01", scheduled_at=datetime.now(UTC))
+    row = _seed_interview(db_session, hr_user, "itv-jointest01", scheduled_at=datetime.now(UTC))
 
     res = client.get(f"/api/v1/interviews/{row.id}/join-token?role=candidate")
     assert res.status_code == 200
@@ -114,33 +125,32 @@ def test_join_token_success(client: TestClient):
     assert claims["video"]["room"] == row.id
     assert claims["video"]["roomJoin"] is True
 
-    refreshed = db.get(Interview, row.id)
+    db_session.expire_all()
+    refreshed = db_session.get(Interview, row.id)
     assert refreshed is not None
     assert refreshed.status == InterviewStatus.in_progress
 
 
-def test_join_token_403_too_early(client: TestClient):
+def test_join_token_403_too_early(client: TestClient, db_session):
     headers = _auth_headers(client)
     client.get("/api/v1/interviews/slots", headers=headers)
 
-    db = TestingSessionLocal()
-    hr_user = db.scalar(select(User))
+    hr_user = db_session.scalar(select(User))
     future = datetime.now(UTC) + timedelta(hours=2)
-    row = _seed_interview(db, hr_user, "itv-jointest02", scheduled_at=future)
+    row = _seed_interview(db_session, hr_user, "itv-jointest02", scheduled_at=future)
 
     res = client.get(f"/api/v1/interviews/{row.id}/join-token")
     assert res.status_code == 403
 
 
-def test_join_token_410_expired(client: TestClient):
+def test_join_token_410_expired(client: TestClient, db_session):
     headers = _auth_headers(client)
     client.get("/api/v1/interviews/slots", headers=headers)
 
-    db = TestingSessionLocal()
-    hr_user = db.scalar(select(User))
+    hr_user = db_session.scalar(select(User))
     settings = get_settings()
     past = datetime.now(UTC) - timedelta(minutes=settings.session_window_minutes + 5)
-    row = _seed_interview(db, hr_user, "itv-jointest03", scheduled_at=past)
+    row = _seed_interview(db_session, hr_user, "itv-jointest03", scheduled_at=past)
 
     res = client.get(f"/api/v1/interviews/{row.id}/join-token")
     assert res.status_code == 410

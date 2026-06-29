@@ -83,6 +83,12 @@ const paths = {
       <path d="m9 12 2 2 4-4" />
     </>
   ),
+  alert: (
+    <>
+      <path d="M12 9v4M12 17h.01" />
+      <path d="M10.3 4.3h3.4L22 20H2L10.3 4.3Z" />
+    </>
+  ),
   copy: (
     <>
       <rect x="9" y="9" width="11" height="11" rx="2" />

@@ -1,5 +1,6 @@
-"""LiveKit access token minting and join-window validation."""
+"""LiveKit access token minting, agent dispatch, and join-window validation."""
 
+import json
 import logging
 import time
 from datetime import UTC, datetime, timedelta
@@ -132,3 +133,41 @@ def mark_candidate_joined(row: Interview) -> bool:
         row.status = InterviewStatus.in_progress
         return True
     return False
+
+
+def _livekit_http_url(ws_url: str) -> str:
+    return ws_url.replace("ws://", "http://").replace("wss://", "https://")
+
+
+async def dispatch_interview_agent(
+    *,
+    room_name: str,
+    interview_id: str,
+    settings: Settings | None = None,
+) -> None:
+    """Ask LiveKit to assign the interview worker to this room."""
+    cfg = settings or get_settings()
+    if not cfg.livekit_api_key or not cfg.livekit_api_secret:
+        return
+
+    try:
+        from livekit import api
+
+        lkapi = api.LiveKitAPI(
+            _livekit_http_url(cfg.livekit_url),
+            cfg.livekit_api_key,
+            cfg.livekit_api_secret,
+        )
+        try:
+            await lkapi.agent_dispatch.create_dispatch(
+                api.CreateAgentDispatchRequest(
+                    agent_name=cfg.livekit_agent_name,
+                    room=room_name,
+                    metadata=json.dumps({"interview_id": interview_id}),
+                )
+            )
+            logger.info("Dispatched agent %s to room %s", cfg.livekit_agent_name, room_name)
+        finally:
+            await lkapi.aclose()
+    except Exception as exc:
+        logger.warning("Agent dispatch failed for room %s: %s", room_name, exc)

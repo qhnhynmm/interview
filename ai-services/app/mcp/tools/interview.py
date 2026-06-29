@@ -25,6 +25,11 @@ async def get_assignment_state(interview_id: str) -> dict[str, Any]:
     }
 
 
+async def end_interview(interview_id: str, reason: str = "completed", detail: str = "") -> dict[str, Any]:
+    await _client.end_interview(interview_id, reason=reason, detail=detail)
+    return {"ok": True}
+
+
 # Scaffold: remaining tools delegate to backend as they are implemented.
 _STUB_NAMES = [
     "update_interview_status",
@@ -37,7 +42,6 @@ _STUB_NAMES = [
     "save_sandbox_files",
     "save_cognitive_answers",
     "finalize_recording",
-    "end_interview",
     "get_time_remaining",
 ]
 
@@ -50,5 +54,6 @@ INTERVIEW_TOOLS: dict[str, ToolFn] = {
     "get_interview": get_interview,
     "get_interview_plan": get_interview_plan,
     "get_assignment_state": get_assignment_state,
+    "end_interview": end_interview,
     **{name: _not_implemented for name in _STUB_NAMES},
 }

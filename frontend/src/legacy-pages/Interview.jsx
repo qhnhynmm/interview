@@ -5,6 +5,7 @@ import { Icon, Spinner } from '../components/icons.jsx'
 import { ReasoningStream } from '../components/ReasoningStream.jsx'
 import SchedulerModal from '../components/SchedulerModal.jsx'
 import { EMPTY } from '../constants/interview.js'
+import { submitInterviewStream } from '../utils/interviews.js'
 
 function fmtScheduled(isoStr) {
   const d = new Date(isoStr)
@@ -33,44 +34,36 @@ export default function Interview({ onCreate }) {
   const [error, setError] = useState(null)
   const [showScheduler, setShowScheduler] = useState(false)
   const fileRef = useRef(null)
-  // The link is revealed only once BOTH the API result is in AND the mock
-  // reasoning flow has finished narrating (the API call is usually faster than
-  // the animation). Whichever finishes last triggers the reveal. Refs, not
-  // state, so the two async completion points coordinate without an effect.
-  const recordRef = useRef(null)
-  const reasoningDoneRef = useRef(false)
+  const [progressLines, setProgressLines] = useState([])
+  const [streamDone, setStreamDone] = useState(false)
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
   const valid = form.candidateName.trim() && form.email.trim() && form.role.trim() && form.jd.trim() && form.requests.trim() && form.cvFile
 
-  function reveal(record) {
-    setCreated(record)
-    setCopied(false)
-    setLoading(false)
-    recordRef.current = null
-    reasoningDoneRef.current = false
-  }
-
-  function handleReasoningComplete() {
-    reasoningDoneRef.current = true
-    if (recordRef.current) reveal(recordRef.current)
-  }
-
   async function submitWithSlot(scheduledAt) {
     setShowScheduler(false)
     setError(null)
-    recordRef.current = null
-    reasoningDoneRef.current = false
+    setProgressLines([])
+    setStreamDone(false)
     setLoading(true)
     const resolvedAt = scheduledAt === 'instant' ? new Date().toISOString() : scheduledAt
     try {
-      const record = await onCreate({ ...form, scheduledAt: resolvedAt })
-      // Park the result; reveal only after the reasoning flow finishes too.
-      recordRef.current = record
-      if (reasoningDoneRef.current) reveal(record)
+      const record = await submitInterviewStream(
+        { ...form, scheduledAt: resolvedAt },
+        {
+          onProgress: (line) => {
+            setProgressLines((prev) => [...prev, line])
+          },
+        },
+      )
+      setStreamDone(true)
+      await onCreate({ ...form, scheduledAt: resolvedAt, __record: record })
+      setCreated(record)
+      setCopied(false)
+      setLoading(false)
     } catch (err) {
-      // On failure there's nothing to narrate toward — stop immediately.
       setError(err.message)
+      setStreamDone(true)
       setLoading(false)
     }
   }
@@ -263,13 +256,8 @@ export default function Interview({ onCreate }) {
           <h3>Generated session</h3>
           <p>The candidate-facing meeting link appears here.</p>
 
-          {loading ? (
-            <ReasoningStream
-              role={form.role}
-              seniority={form.seniority}
-              candidateName={form.candidateName}
-              onComplete={handleReasoningComplete}
-            />
+          {loading || (progressLines.length > 0 && !created) ? (
+            <ReasoningStream lines={progressLines} done={streamDone} error={error} />
           ) : !created ? (
             <div className="empty">
               <div className="empty__icon">

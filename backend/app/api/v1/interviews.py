@@ -1,7 +1,9 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,19 +12,30 @@ from app.config import get_settings
 from app.database import get_db
 from app.models.interview import Interview, InterviewStatus, new_interview_id
 from app.models.user import User
-from app.schemas.interview import InterviewDetail, InterviewListItem, JoinTokenResponse, SlotsResponse
+from app.schemas.interview import (
+    EndInterviewBody,
+    InterviewDetail,
+    InterviewListItem,
+    JoinTokenResponse,
+    ProctorEventBody,
+    SlotsResponse,
+)
+from app.services.livekit_proctor import broadcast_proctor_violation
 from app.services.cv_extractor import extract_cv
 from app.services.assignment import fetch_assignment
 from app.services.planning import fetch_interview_plan
 from app.services.slots import generate_slots, instant_available
 from app.services.livekit_tokens import (
+    dispatch_interview_agent,
     assert_join_allowed,
     build_join_token_response,
     mark_candidate_joined,
 )
+from app.services.generate_stream import generate_link_event_stream
 from app.services.storage import save_cv
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
+logger = logging.getLogger(__name__)
 
 
 def _meeting_url(interview_id: str) -> str:
@@ -71,6 +84,7 @@ def _to_detail(row: Interview) -> InterviewDetail:
         current_code=row.current_code,
         sandbox_files=row.sandbox_files,
         cognitive_answers=row.cognitive_answers,
+        proctoring_events=list(row.proctoring_events or []),
     )
 
 
@@ -108,7 +122,7 @@ def list_interviews(
 
 
 @router.get("/{interview_id}/join-token", response_model=JoinTokenResponse)
-def join_token(
+async def join_token(
     interview_id: str,
     role: Literal["candidate", "agent"] = Query("candidate"),
     db: Session = Depends(get_db),
@@ -123,6 +137,7 @@ def join_token(
             db.add(row)
             db.commit()
             db.refresh(row)
+        await dispatch_interview_agent(room_name=row.id, interview_id=row.id)
 
     payload = build_join_token_response(row, role=role)  # type: ignore[arg-type]
     return JoinTokenResponse(**payload)
@@ -137,6 +152,115 @@ def get_interview(
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
     return _to_detail(row)
+
+
+_MAX_PROCTOR_EVENTS = 500
+
+
+@router.post("/{interview_id}/proctor-event", status_code=status.HTTP_204_NO_CONTENT)
+async def record_proctor_event(
+    interview_id: str,
+    body: ProctorEventBody,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Public endpoint — browser proctoring reports fire-and-forget events."""
+    row = db.get(Interview, interview_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+
+    event = body.model_dump(exclude_none=True)
+    events = list(row.proctoring_events or [])
+    events.append(event)
+    if len(events) > _MAX_PROCTOR_EVENTS:
+        events = events[-_MAX_PROCTOR_EVENTS:]
+    row.proctoring_events = events
+
+    if row.status == InterviewStatus.scheduled:
+        row.status = InterviewStatus.in_progress
+
+    db.add(row)
+    db.commit()
+
+    logger.info(
+        "proctor_event interview=%s kind=%s severity=%s detail=%s",
+        interview_id,
+        event.get("kind"),
+        event.get("severity"),
+        event.get("detail"),
+    )
+
+    # Forward to interview agent via LiveKit (skip informational unsupported notices).
+    if event.get("kind") != "detection_unsupported" and event.get("severity") != "info":
+        await broadcast_proctor_violation(room_name=interview_id, event=event)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{interview_id}/end", status_code=status.HTTP_204_NO_CONTENT)
+def end_interview(
+    interview_id: str,
+    body: EndInterviewBody,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Mark interview ended (agent or candidate teardown). Idempotent."""
+    row = db.get(Interview, interview_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+
+    if row.status in (InterviewStatus.completed, InterviewStatus.cancelled, InterviewStatus.abandoned):
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    if body.reason == "proctoring":
+        row.status = InterviewStatus.abandoned
+    else:
+        row.status = InterviewStatus.completed
+
+    db.add(row)
+    db.commit()
+    logger.info(
+        "interview_end interview=%s status=%s reason=%s detail=%s",
+        interview_id,
+        row.status.value,
+        body.reason,
+        body.detail,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/generate-link/stream")
+async def generate_link_stream(
+    candidate_name: str = Form(...),
+    candidate_email: str = Form(""),
+    position: str = Form(...),
+    jd_text: str = Form(...),
+    special_requirements: str = Form(""),
+    interview_language: str = Form("en"),
+    seniority: str = Form(""),
+    scheduled_at: str | None = Form(None),
+    cv_file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    hr_user: User = Depends(require_hr_user),
+) -> StreamingResponse:
+    name = candidate_name.strip()
+    role = position.strip()
+    jd = jd_text.strip()
+    if not name or not role or not jd:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Missing required fields")
+
+    stream = generate_link_event_stream(
+        db=db,
+        hr_user=hr_user,
+        candidate_name=name,
+        candidate_email=candidate_email,
+        position=role,
+        jd_text=jd,
+        special_requirements=special_requirements.strip() or None,
+        interview_language=interview_language,
+        seniority=seniority.strip() or None,
+        scheduled_at=_parse_scheduled_at(scheduled_at),
+        cv_file=cv_file,
+    )
+    return StreamingResponse(stream, media_type="text/event-stream")
 
 
 @router.post("/generate-link", response_model=InterviewListItem, status_code=status.HTTP_201_CREATED)

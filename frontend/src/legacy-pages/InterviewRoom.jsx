@@ -6,7 +6,7 @@ import RULES from '@/data/interviewRules.json'
 import AssignmentPanel from '@/components/AssignmentPanel.jsx'
 import { useLiveKit } from '@/hooks/useLiveKit.js'
 import { useCameraRecorder } from '@/hooks/useCameraRecorder.js'
-import { useProctoring } from '@/hooks/useProctoring.js'
+import { PROCTOR_EVENT_LABELS, useProctoring } from '@/hooks/useProctoring.js'
 import { fetchInterview, uploadRecording, uploadChunk } from '@/utils/interviews.js'
 import '@/App.css'
 
@@ -166,7 +166,14 @@ export default function InterviewRoom({ interviewId }) {
   const [introSecsLeft, setIntroSecsLeft] = useState(null)
   // Cheating detection starts only after 25s
   const [proctoringActive, setProctoringActive] = useState(false)
+  const [proctorAlert, setProctorAlert] = useState(null)
   const chatStartedRef = useRef(false)
+
+  const handleProctorEvent = useCallback((event) => {
+    if (event.severity === 'info') return
+    const label = PROCTOR_EVENT_LABELS[event.kind] || event.kind
+    setProctorAlert({ label, detail: event.detail, at: Date.now() })
+  }, [])
 
   const onChunk = useCallback(async (blob) => {
     try { await uploadChunk(interviewId, blob) }
@@ -220,6 +227,9 @@ export default function InterviewRoom({ interviewId }) {
       setAgentReady(true)
     } else if (msg.type === 'ui:assistant_toggle') {
       setAssistantEnabled(!!msg.enabled)
+    } else if (msg.type === 'ui:proctor_alert') {
+      const label = PROCTOR_EVENT_LABELS[msg.kind] || msg.kind || 'Proctoring alert'
+      setProctorAlert({ label, detail: msg.detail, at: Date.now() })
     } else if (msg.type === 'control:end') {
       setPhase('saving')
       finalizeRecording().finally(() => setPhase('ended'))
@@ -264,8 +274,14 @@ export default function InterviewRoom({ interviewId }) {
     interviewId,
     proctoringActive,
     recorder.stream,
-    { gazeThresholdMs: 5000 },
+    { gazeThresholdMs: 5000, onEvent: handleProctorEvent },
   )
+
+  useEffect(() => {
+    if (!proctorAlert) return
+    const timer = setTimeout(() => setProctorAlert(null), 8000)
+    return () => clearTimeout(timer)
+  }, [proctorAlert])
 
   // When the agent joins and chatting begins: start the 15s mic lock + 25s proctoring delay
   useEffect(() => {
@@ -448,6 +464,8 @@ export default function InterviewRoom({ interviewId }) {
         isLive={isLive}
         onToggleMic={livekit.toggleMute}
         mode="code"
+        proctoringActive={proctoringActive}
+        proctorAlert={proctorAlert}
       >
         <AssignmentPanel
           key={assignment?.type ?? problem?.title ?? 'fallback'}
@@ -476,6 +494,8 @@ export default function InterviewRoom({ interviewId }) {
       livekit={livekit}
       recording={recorder.recording}
       selfStream={recorder.stream}
+      proctoringActive={proctoringActive}
+      proctorAlert={proctorAlert}
     >
       <div style={{ ...centeredStyle, flexDirection: 'column', gap: 32, padding: '32px 24px' }}>
 
@@ -490,7 +510,12 @@ export default function InterviewRoom({ interviewId }) {
                 {interview?.position}
               </p>
             </div>
-            <button className="btn btn--primary" onClick={startInterview}>
+            <button
+              className="btn btn--primary"
+              onClick={startInterview}
+              disabled={!rulesAccepted}
+              title={!rulesAccepted ? 'Accept the interview rules first' : undefined}
+            >
               <Icon name="spark" size={16} />
               Start Interview
             </button>
@@ -602,9 +627,23 @@ function SelfViewDock({ stream }) {
 function Shell({
   interview, qNum, qTotal, phase, livekit, onSwitchMode, recording, selfStream, children,
   micMuted, micLocked, introSecsLeft, isLive, onToggleMic, mode,
+  proctoringActive = false, proctorAlert = null,
 }) {
   return (
     <div style={{ height: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {proctorAlert && (
+        <div style={{
+          flexShrink: 0, padding: '8px 20px',
+          background: 'rgba(251,191,36,0.12)', borderBottom: '1px solid rgba(251,191,36,0.35)',
+          display: 'flex', alignItems: 'center', gap: 10, fontSize: 12,
+        }}>
+          <Icon name="alert" size={14} />
+          <span style={{ color: '#fbbf24', fontWeight: 600 }}>{proctorAlert.label}</span>
+          {proctorAlert.detail && (
+            <span style={{ color: 'var(--color-muted)' }}>{proctorAlert.detail}</span>
+          )}
+        </div>
+      )}
       <header style={{
         borderBottom: '1px solid var(--color-border)',
         padding: '0 20px', height: 52,
@@ -629,6 +668,12 @@ function Shell({
               <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#ff6b6b' }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff6b6b', animation: 'pulse 1.5s ease-in-out infinite' }} />
                 Recording
+              </span>
+            )}
+            {proctoringActive && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#fbbf24' }}>
+                <Icon name="shield" size={12} />
+                Anti-cheat active
               </span>
             )}
             {qTotal > 0 && (phase === 'chatting' || phase === 'final') && (

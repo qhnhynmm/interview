@@ -107,6 +107,66 @@ def test_generate_link_and_list(client: TestClient):
     assert "raw_text" not in row.cv_fields
 
 
+def test_end_interview_public(client: TestClient, monkeypatch):
+    headers = _auth_headers(client)
+    cv = io.BytesIO(b"skills: python")
+    created = client.post(
+        "/api/v1/interviews/generate-link",
+        headers=headers,
+        data={
+            "candidate_name": "End Test",
+            "candidate_email": "end@email.com",
+            "position": "Engineer",
+            "jd_text": "JD",
+        },
+        files={"cv_file": ("cv.txt", cv, "text/plain")},
+    ).json()
+
+    res = client.post(
+        f"/api/v1/interviews/{created['id']}/end",
+        json={"reason": "proctoring", "detail": "tab_switch"},
+    )
+    assert res.status_code == 204
+
+    row = TestingSessionLocal().get(Interview, created["id"])
+    assert row is not None
+    assert row.status.value == "abandoned"
+
+
+def test_proctor_event_public(client: TestClient, monkeypatch):
+    async def _noop_broadcast(**_kwargs):
+        return None
+
+    monkeypatch.setattr(
+        "app.api.v1.interviews.broadcast_proctor_violation",
+        _noop_broadcast,
+    )
+    headers = _auth_headers(client)
+    cv = io.BytesIO(b"skills: python")
+    created = client.post(
+        "/api/v1/interviews/generate-link",
+        headers=headers,
+        data={
+            "candidate_name": "Proctor Test",
+            "candidate_email": "proctor@email.com",
+            "position": "Engineer",
+            "jd_text": "JD",
+        },
+        files={"cv_file": ("cv.txt", cv, "text/plain")},
+    ).json()
+
+    res = client.post(
+        f"/api/v1/interviews/{created['id']}/proctor-event",
+        json={"kind": "tab_switch", "severity": "high", "detail": "Left for 2.1s", "ts": 1.0},
+    )
+    assert res.status_code == 204
+
+    row = TestingSessionLocal().get(Interview, created["id"])
+    assert row is not None
+    assert len(row.proctoring_events) == 1
+    assert row.proctoring_events[0]["kind"] == "tab_switch"
+
+
 def test_get_interview_public(client: TestClient):
     headers = _auth_headers(client)
     cv = io.BytesIO(b"skills: go, python")

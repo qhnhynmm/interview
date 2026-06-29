@@ -75,6 +75,97 @@ export async function loadInterviews() {
   return list.map(normalize)
 }
 
+function buildInterviewFormData(form) {
+  const fd = new FormData()
+  fd.append('candidate_name', form.candidateName.trim())
+  if (form.email) fd.append('candidate_email', form.email.trim())
+  fd.append('position', form.role.trim())
+  fd.append('jd_text', form.jd.trim())
+  if (form.requests) fd.append('special_requirements', form.requests.trim())
+  fd.append('interview_language', form.language || 'en')
+  if (form.seniority) fd.append('seniority', form.seniority)
+  if (form.cvFile) fd.append('cv_file', form.cvFile)
+  if (form.scheduledAt) fd.append('scheduled_at', form.scheduledAt)
+  return fd
+}
+
+function parseSseChunk(buffer, onEvent) {
+  const parts = buffer.split('\n\n')
+  const rest = parts.pop() ?? ''
+  for (const block of parts) {
+    if (!block.trim()) continue
+    let eventType = 'message'
+    let dataLine = ''
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event: ')) eventType = line.slice(7).trim()
+      if (line.startsWith('data: ')) dataLine = line.slice(6)
+    }
+    if (!dataLine) continue
+    try {
+      const payload = JSON.parse(dataLine)
+      onEvent(eventType, payload)
+    } catch {
+      // ignore malformed chunks
+    }
+  }
+  return rest
+}
+
+export async function submitInterviewStream(form, { onProgress } = {}) {
+  if (USE_MOCK_API) {
+    const record = await submitInterview(form)
+    onProgress?.({ agent: 'Planning', text: `[Mock] Session created for ${form.candidateName}.` })
+    return record
+  }
+
+  const res = await fetch(`${API}/interviews/generate-link/stream`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: buildInterviewFormData(form),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to create interview')
+  }
+
+  const reader = res.body?.getReader()
+  if (!reader) throw new Error('Streaming not supported by browser')
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let record = null
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    buffer = parseSseChunk(buffer, (eventType, payload) => {
+      if (payload.type === 'progress' || eventType === 'progress') {
+        onProgress?.({ agent: payload.agent, text: payload.text })
+      } else if (payload.type === 'done' || eventType === 'done') {
+        record = normalize(payload.interview)
+      } else if (payload.type === 'error' || eventType === 'error') {
+        throw new Error(payload.detail || 'Interview generation failed')
+      }
+    })
+  }
+
+  if (buffer.trim()) {
+    parseSseChunk(`${buffer}\n\n`, (eventType, payload) => {
+      if (payload.type === 'progress' || eventType === 'progress') {
+        onProgress?.({ agent: payload.agent, text: payload.text })
+      } else if (payload.type === 'done' || eventType === 'done') {
+        record = normalize(payload.interview)
+      } else if (payload.type === 'error' || eventType === 'error') {
+        throw new Error(payload.detail || 'Interview generation failed')
+      }
+    })
+  }
+
+  if (!record) throw new Error('Interview stream ended without a result')
+  return record
+}
+
 export async function submitInterview(form) {
   if (USE_MOCK_API) {
     await mockDelay(600)
@@ -108,20 +199,10 @@ export async function submitInterview(form) {
     }
   }
 
-  const fd = new FormData()
-  fd.append('candidate_name', form.candidateName.trim())
-  if (form.email) fd.append('candidate_email', form.email.trim())
-  fd.append('position', form.role.trim())
-  fd.append('jd_text', form.jd.trim())
-  if (form.requests) fd.append('special_requirements', form.requests.trim())
-  fd.append('interview_language', form.language || 'en')
-  if (form.seniority) fd.append('seniority', form.seniority)
-  if (form.cvFile) fd.append('cv_file', form.cvFile)
-  if (form.scheduledAt) fd.append('scheduled_at', form.scheduledAt)
   const res = await fetch(`${API}/interviews/generate-link`, {
     method: 'POST',
     headers: authHeaders(),
-    body: fd,
+    body: buildInterviewFormData(form),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
@@ -158,16 +239,16 @@ export async function reportProctorEvent(interviewId, event) {
     return
   }
 
-  // try {
-  //   await fetch(`${API}/interviews/${interviewId}/proctor-event`, {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify(event),
-  //     keepalive: true,
-  //   })
-  // } catch (e) {
-  //   console.warn('[proctor] failed to report event:', e)
-  // }
+  try {
+    await fetch(`${API}/interviews/${interviewId}/proctor-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event),
+      keepalive: true,
+    })
+  } catch (e) {
+    console.warn('[proctor] failed to report event:', e)
+  }
 }
 
 export async function endInterview(interviewId) {

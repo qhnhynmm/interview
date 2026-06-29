@@ -20,6 +20,7 @@ from app.agents.planning.prompts import (
     EVALUATION_BRIEF_SYSTEM,
     INTERVIEW_BRIEF_SYSTEM,
 )
+from app.infra.progress import ProgressFn
 from app.infra.tracing import set_span_attributes, span_ok, trace_span
 from app.schemas.plan import GroundingFacts, InterviewPlan, PlanRequest
 from app.skills.interview_planning.scripts.planning_tools import duration_for_seniority
@@ -152,7 +153,16 @@ async def _generate_brief(
         return fallback_fn()
 
 
-async def run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict]:
+async def _emit_progress(progress: ProgressFn | None, agent: str, text: str) -> None:
+    if progress is not None:
+        await progress(agent, text)
+
+
+async def run_planning_agent(
+    request: PlanRequest,
+    *,
+    progress: ProgressFn | None = None,
+) -> tuple[InterviewPlan, dict]:
     """Main orchestrator: keyword grounding → analyst LLM → 3 sequential brief LLMs."""
     with trace_span(
         "planning.run",
@@ -162,14 +172,29 @@ async def run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict]
         candidate_name=request.candidate_name,
         language=request.language,
     ):
-        return await _run_planning_agent(request)
+        return await _run_planning_agent(request, progress=progress)
 
 
-async def _run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict]:
+async def _run_planning_agent(
+    request: PlanRequest,
+    *,
+    progress: ProgressFn | None = None,
+) -> tuple[InterviewPlan, dict]:
     llm = PlanningLLM()
     degraded_briefs = [0]
+    name = request.candidate_name or "the candidate"
+    role = request.position or "the position"
+    seniority = request.seniority or "Mid"
+
+    await _emit_progress(progress, "Planning", f"Received CV and job description for {name}.")
+    await _emit_progress(progress, "Planning", f"Parsing JD — role: {role} · level: {seniority}.")
 
     with trace_span("planning.keyword_grounding", kind="CHAIN", step="keyword_grounding"):
+        await _emit_progress(
+            progress,
+            "Planning",
+            "Grounding: extracting required skills and primary domain…",
+        )
         _, _, keyword_facts = run_keyword_grounding(request)
         set_span_attributes(
             match_score=keyword_facts.match_score,
@@ -178,6 +203,11 @@ async def _run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict
         )
 
     with trace_span("planning.semantic_grounding", kind="CHAIN", step="planning_analyst"):
+        await _emit_progress(
+            progress,
+            "Planning",
+            f"Matching {name}'s skills against the JD and flagging gaps.",
+        )
         facts = await _semantic_grounding(llm, request, keyword_facts)
         set_span_attributes(
             analyst_degraded=facts.analyst_degraded,
@@ -186,6 +216,11 @@ async def _run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict
 
     context = _build_shared_context(request, facts)
 
+    await _emit_progress(
+        progress,
+        "Planning",
+        "Drafting the interview brief — topics & questions tailored to the CV…",
+    )
     interview_brief = await _generate_brief(
         llm,
         name="interview_brief",
@@ -195,6 +230,11 @@ async def _run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict
         degraded_counter=degraded_briefs,
     )
 
+    await _emit_progress(
+        progress,
+        "Planning",
+        "Drafting the evaluation brief — scoring criteria & red flags…",
+    )
     evaluation_brief = await _generate_brief(
         llm,
         name="evaluation_brief",
@@ -204,6 +244,11 @@ async def _run_planning_agent(request: PlanRequest) -> tuple[InterviewPlan, dict
         degraded_counter=degraded_briefs,
     )
 
+    await _emit_progress(
+        progress,
+        "Planning",
+        "Handing the assignment directive to the Code Assignment Agent…",
+    )
     assignment_body = await _generate_brief(
         llm,
         name="assignment_brief",

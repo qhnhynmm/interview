@@ -119,29 +119,13 @@ def init_tracing(service_name: str = "aurelia-ai-services") -> None:
     trace.set_tracer_provider(provider)
     _tracer = trace.get_tracer("aurelia.agents", "0.1.0")
 
-    openlit_ok = False
     try:
-        import openlit
+        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
-        openlit.init(
-            otlp_endpoint=settings.otel_otlp_endpoint,
-            application_name=service_name,
-            environment=settings.app_env,
-            disabled=False,
-        )
-        openlit_ok = True
-        logger.info("OpenLIT instrumentation active")
+        HTTPXClientInstrumentor().instrument()
+        logger.info("httpx OpenTelemetry instrumentation active")
     except Exception as exc:
-        logger.warning("OpenLIT init skipped (custom spans still export): %s", exc)
-
-    if not openlit_ok:
-        try:
-            from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-
-            HTTPXClientInstrumentor().instrument()
-            logger.info("httpx OpenTelemetry instrumentation active")
-        except Exception as exc:
-            logger.warning("httpx auto-instrumentation skipped: %s", exc)
+        logger.warning("httpx auto-instrumentation skipped: %s", exc)
 
     _initialized = True
     logger.info("Tracing enabled → %s (ui: http://localhost:6006)", settings.otel_otlp_endpoint)

@@ -43,6 +43,8 @@ def _migrate_interview_cv_columns() -> None:
         statements.append("ALTER TABLE interviews ADD COLUMN cv_text TEXT")
     if "cv_fields" not in existing:
         statements.append(f"ALTER TABLE interviews ADD COLUMN cv_fields {json_type}")
+    if "proctoring_events" not in existing:
+        statements.append(f"ALTER TABLE interviews ADD COLUMN proctoring_events {json_type}")
 
     with engine.begin() as conn:
         for stmt in statements:

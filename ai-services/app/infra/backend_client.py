@@ -11,9 +11,15 @@ logger = logging.getLogger(__name__)
 class BackendClient:
     """Thin HTTP client — MCP tools delegate to backend API (no direct DB access)."""
 
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(self, settings: Settings | None = None, *, base_url: str | None = None) -> None:
         self._settings = settings or get_settings()
-        self._base = self._settings.backend_url.rstrip("/")
+        if base_url:
+            self._base = base_url.rstrip("/")
+        else:
+            self._base = (
+                self._settings.interview_backend_url
+                or self._settings.backend_url
+            ).rstrip("/")
 
     async def _request(
         self,
@@ -40,6 +46,19 @@ class BackendClient:
 
     async def get_interview(self, interview_id: str) -> dict[str, Any]:
         return await self._request("GET", f"/api/v1/interviews/{interview_id}")
+
+    async def end_interview(
+        self,
+        interview_id: str,
+        *,
+        reason: str = "completed",
+        detail: str = "",
+    ) -> None:
+        await self._request(
+            "POST",
+            f"/api/v1/interviews/{interview_id}/end",
+            json={"reason": reason, "detail": detail},
+        )
 
     async def health(self) -> dict[str, Any]:
         return await self._request("GET", "/health")

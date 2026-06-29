@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { getProctoring } from '@/lib/proctoring-config.js'
 import { reportProctorEvent } from '@/utils/interviews.js'
 
 // Anti-cheat proctoring for the live interview. Detects several things from the
@@ -16,12 +17,8 @@ import { reportProctorEvent } from '@/utils/interviews.js'
 //
 // All reporting is fire-and-forget: proctoring never disrupts the interview.
 
-// Get proctoring config from vite config (exposed via define)
-// eslint-disable-next-line no-undef
-const PROCTORING = typeof __PROCTORING__ !== 'undefined' ? __PROCTORING__ : {}
+const PROCTORING = getProctoring()
 
-// Use values from config (required - no fallback defaults)
-// If config is missing, values will be undefined and cause errors
 const FLICKER_MS = PROCTORING.flicker_ms
 const BLUR_GRACE_MS = PROCTORING.blur_grace_ms
 const MONITOR_REPEAT_MS = PROCTORING.monitor_repeat_ms
@@ -37,26 +34,27 @@ const MODEL_URL = PROCTORING.face_model_url
 const OBJECT_MODEL_URL = PROCTORING.object_model_url
 const MIN_FACE_DETECTION_CONFIDENCE = PROCTORING.min_face_detection_confidence
 
+export const PROCTOR_EVENT_LABELS = {
+  tab_switch: 'Left the interview window',
+  gaze_away: 'Looked away from screen',
+  multiple_faces: 'Multiple people in frame',
+  phone_detected: 'Phone detected',
+  secondary_monitor: 'External display connected',
+  detection_unsupported: 'Some checks unavailable in this browser',
+}
+
 export function useProctoring(
   interviewId,
   active,
   stream,
   {
+    onEvent,
     enableGaze = PROCTORING.enable_gaze,
     gazeThresholdMs = PROCTORING.gaze_threshold_ms,
     gazeIntervalMs = PROCTORING.gaze_interval_ms,
-    // A second face in frame is a strong cheating signal (someone helping). Run
-    // off the SAME face model — cheap. Fire fast: a brief sustained appearance.
     enableMultiFace = PROCTORING.enable_multi_face,
     multiFaceThresholdMs = PROCTORING.multi_face_threshold_ms,
-    // Ignore a second face smaller than this fraction of the frame width — a
-    // tiny face in frame is almost always a poster/photo/reflection in the
-    // background, the main multi-face false-positive source, not a real helper
-    // sitting next to the candidate.
     multiFaceMinSizeRatio = PROCTORING.multi_face_min_size_ratio,
-    // Phone detection runs a separate, light object-detector pass on the camera.
-    // The detector flickers, so thresholds are low and a grace window (below)
-    // bridges dropped frames instead of resetting on every miss.
     enablePhone = PROCTORING.enable_phone,
     phoneThresholdMs = PROCTORING.phone_threshold_ms,
     phoneIntervalMs = PROCTORING.phone_interval_ms,
@@ -76,7 +74,9 @@ export function useProctoring(
     const cleanups = []
     const report = (event) => {
       if (disposed) return
-      reportProctorEvent(interviewId, { ts: Date.now() / 1000, ...event })
+      const payload = { ts: Date.now() / 1000, ...event }
+      onEvent?.(payload)
+      reportProctorEvent(interviewId, payload)
     }
 
     // ── 1. Secondary monitor ────────────────────────────────────────────────
@@ -254,6 +254,7 @@ export function useProctoring(
     phoneThresholdMs,
     phoneIntervalMs,
     phoneScore,
+    onEvent,
   ])
 }
 

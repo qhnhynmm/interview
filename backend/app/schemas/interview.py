@@ -35,6 +35,18 @@ class JoinTokenResponse(BaseModel):
     room_name: str
 
 
+class ProctorEventBody(BaseModel):
+    kind: str
+    severity: str = "medium"
+    detail: str = ""
+    ts: float | None = None
+
+
+class EndInterviewBody(BaseModel):
+    reason: str = "completed"
+    detail: str = ""
+
+
 class InterviewDetail(BaseModel):
     id: str
     candidate_name: str
@@ -51,5 +63,6 @@ class InterviewDetail(BaseModel):
     current_code: str | None = None
     sandbox_files: dict | None = None
     cognitive_answers: dict | None = None
+    proctoring_events: list[dict] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}

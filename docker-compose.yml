@@ -36,6 +36,10 @@
 #   ./scripts/verify-livekit.sh
 #   WebSocket: ws://localhost:7880  |  API keys: devkey / secret (see .env.example)
 #
+# Interview worker (voice agent — Phase 2):
+#   docker compose up -d interview-worker
+#   # or local: cd ai-services && PYTHONPATH=. python -m app.worker dev
+#
 # Agent tracing UI (tùy chọn): http://localhost:6006
 
 services:
@@ -152,6 +156,31 @@ services:
     command: ["--config", "/etc/livekit.yaml", "--bind", "0.0.0.0"]
     volumes:
       - ./configs/livekit.yaml:/etc/livekit.yaml:ro
+
+  interview-worker:
+    build:
+      context: .
+      dockerfile: ai-services/Dockerfile.worker
+      network: host
+    container_name: aurelia-interview-worker
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      livekit:
+        condition: service_started
+      ai-services:
+        condition: service_started
+      backend:
+        condition: service_started
+    environment:
+      BACKEND_URL: http://127.0.0.1:8000
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LIVEKIT_URL: ${LIVEKIT_URL:-ws://127.0.0.1:7880}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
+      LIVEKIT_WORKER_PORT: "8082"
 
 volumes:
   postgres_data:

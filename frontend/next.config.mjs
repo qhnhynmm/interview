@@ -13,6 +13,7 @@ const nextConfig = {
       '@/src': path.resolve(process.cwd(), 'src'),
       '@/legacy-pages': path.resolve(process.cwd(), 'src/legacy-pages'),
       '@/components': path.resolve(process.cwd(), 'src/components'),
+      '@/lib': path.resolve(process.cwd(), 'lib'),
     }
     return config
   },

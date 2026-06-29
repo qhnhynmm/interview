@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Icon, Spinner } from '@/components/icons.jsx'
-import { fetchCandidate, subscribeToEvents } from '@/utils/interviews.js'
+import { fetchCandidate } from '@/utils/interviews.js'
 import { STATUS_LABEL } from '@/constants/candidate.js'
 import '@/App.css'
 
@@ -96,14 +96,13 @@ export default function CandidateProfile({ candidateId }) {
       .catch((e) => setError(e.message))
   }, [candidateId])
 
-  // Subscribe to SSE while the report is being generated; auto-refresh on ready.
+  // Poll while the report is being generated.
   useEffect(() => {
     if (!data || data.status !== 'evaluating') return
-    return subscribeToEvents(candidateId, (msg) => {
-      if (msg.event === 'report_ready') {
-        fetchCandidate(candidateId).then(setData).catch(() => {})
-      }
-    })
+    const timer = setInterval(() => {
+      fetchCandidate(candidateId).then(setData).catch(() => {})
+    }, 4000)
+    return () => clearInterval(timer)
   }, [data?.status, candidateId])
 
   if (error) {

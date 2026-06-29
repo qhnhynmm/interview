@@ -14,6 +14,7 @@ from app.database import get_db
 from app.models.interview import Interview, InterviewStatus, new_interview_id
 from app.models.user import User
 from app.schemas.interview import (
+    CandidateDossier,
     EndInterviewBody,
     InterviewDetail,
     InterviewListItem,
@@ -21,6 +22,7 @@ from app.schemas.interview import (
     ProctorEventBody,
     SlotsResponse,
 )
+from app.services.report_worker import ensure_report_scheduled, schedule_report_generation
 from app.services.livekit_proctor import broadcast_proctor_violation
 from app.services.cv_extractor import extract_cv
 from app.services.assignment import fetch_assignment
@@ -66,6 +68,25 @@ def _to_list_item(row: Interview) -> InterviewListItem:
         language=row.language,
         voice=row.voice or "Puck",
         report=row.report,
+    )
+
+
+def _to_dossier(row: Interview) -> CandidateDossier:
+    return CandidateDossier(
+        id=row.id,
+        candidate_name=row.candidate_name,
+        candidate_email=row.candidate_email,
+        position=row.position,
+        language=row.language,
+        status=row.status.value,
+        scheduled_at=row.scheduled_at,
+        cv_filename=row.cv_filename,
+        cv_text=row.cv_text,
+        cv_fields=row.cv_fields,
+        recording_url=None,
+        report=row.report,
+        report_pdf_url=None,
+        conversation_history=list(row.conversation_history or []),
     )
 
 
@@ -149,6 +170,22 @@ async def join_token(
     return JoinTokenResponse(**payload)
 
 
+@router.get("/{interview_id}/dossier", response_model=CandidateDossier)
+def get_candidate_dossier(
+    interview_id: str,
+    db: Session = Depends(get_db),
+    hr_user: User = Depends(require_hr_user),
+) -> CandidateDossier:
+    row = db.get(Interview, interview_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+    if row.created_by_id != hr_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+    ensure_report_scheduled(db, row)
+    db.refresh(row)
+    return _to_dossier(row)
+
+
 @router.get("/{interview_id}", response_model=InterviewDetail)
 def get_interview(
     interview_id: str,
@@ -219,10 +256,14 @@ def end_interview(
     if body.reason == "proctoring":
         row.status = InterviewStatus.abandoned
     else:
-        row.status = InterviewStatus.completed
+        row.status = InterviewStatus.evaluating
 
     db.add(row)
     db.commit()
+
+    if row.status == InterviewStatus.evaluating:
+        schedule_report_generation(interview_id)
+
     logger.info(
         "interview_end interview=%s status=%s reason=%s detail=%s",
         interview_id,

@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     assignment_endpoint: str = Field(
         default=_YAML.get("assignment_endpoint", "/api/v1/assignment/generate"),
     )
+    inspector_endpoint: str = Field(
+        default=_YAML.get("inspector_endpoint", "/api/v1/inspector/evaluate"),
+    )
     ai_request_timeout: float = Field(default=float(_YAML.get("ai_request_timeout", 120.0)))
 
     livekit_url: str = Field(default=_YAML.get("livekit_url", "ws://127.0.0.1:7880"))
@@ -101,6 +104,10 @@ class Settings(BaseSettings):
     @property
     def planning_url(self) -> str:
         return f"{self.ai_service_url.rstrip('/')}{self.planning_endpoint}"
+
+    @property
+    def inspector_url(self) -> str:
+        return f"{self.ai_service_url.rstrip('/')}{self.inspector_endpoint}"
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -85,6 +85,25 @@ class CodingAssistantStatus(BaseModel):
     enabled: bool
 
 
+class CandidateDossier(BaseModel):
+    id: str
+    candidate_name: str
+    candidate_email: str
+    position: str
+    language: str
+    status: str
+    scheduled_at: datetime | None
+    cv_filename: str | None = None
+    cv_text: str | None = None
+    cv_fields: dict | None = None
+    recording_url: str | None = None
+    report: dict | None = None
+    report_pdf_url: str | None = None
+    conversation_history: list[dict] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}
+
+
 class InterviewDetail(BaseModel):
     id: str
     candidate_name: str

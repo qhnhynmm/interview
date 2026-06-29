@@ -15,6 +15,7 @@ JsonType = JSON().with_variant(JSONB, "postgresql")
 class InterviewStatus(str, enum.Enum):
     scheduled = "scheduled"
     in_progress = "in_progress"
+    evaluating = "evaluating"
     completed = "completed"
     cancelled = "cancelled"
     abandoned = "abandoned"

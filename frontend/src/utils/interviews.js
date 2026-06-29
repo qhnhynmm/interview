@@ -355,10 +355,13 @@ export async function fetchCandidate(candidateId) {
     return getMockCandidate(candidateId)
   }
 
-  // const res = await fetch(`${API}/candidate/${candidateId}`, { headers: authHeaders() })
-  // if (!res.ok) throw new Error('Candidate not found')
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${candidateId}/dossier`, { headers: authHeaders() })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    if (res.status === 401) throw new Error('Please sign in to view candidate profile')
+    throw new Error(err.detail || 'Candidate not found')
+  }
+  return res.json()
 }
 
 export function subscribeToEvents(interviewId, onEvent) {

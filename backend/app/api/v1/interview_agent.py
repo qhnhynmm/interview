@@ -53,6 +53,7 @@ def _to_detail(row: Interview) -> InterviewDetail:
         candidate_email=row.candidate_email,
         position=row.position,
         language=row.language,
+        voice=row.voice or "Puck",
         status=row.status.value,
         scheduled_at=row.scheduled_at,
         meeting_url=_meeting_url(row.id),

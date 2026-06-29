@@ -35,6 +35,7 @@ class Interview(Base):
     position: Mapped[str] = mapped_column(String(128))
     seniority: Mapped[str | None] = mapped_column(String(32), nullable=True)
     language: Mapped[str] = mapped_column(String(8), default="en")
+    voice: Mapped[str] = mapped_column(String(32), default="Puck")
 
     jd_text: Mapped[str] = mapped_column(Text)
     special_requirements: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -71,3 +71,22 @@ def test_resolve_interview_language_from_backend_payload():
 
     assert _resolve_interview_language({"language": "vi"}, "en") == "vi"
     assert _resolve_interview_language({}, "en") == "en"
+
+
+def test_build_realtime_model_uses_session_voice():
+    session = InterviewSession(interview_id="itv-voice", language="en", voice="Kore", plan={})
+    settings = Settings(
+        GEMINI_API_KEY="test-key",
+        interview_live_model="gemini-2.5-flash-native-audio-preview-12-2025",
+        interview_live_voice="Puck",
+    )
+    pipeline = VoicePipeline(session, settings)
+    model = pipeline.build_realtime_model()
+    assert model._opts.voice == "Kore"
+
+
+def test_resolve_interview_voice_from_backend_payload():
+    from app.agents.interview.voice_pipeline import _resolve_interview_voice
+
+    assert _resolve_interview_voice({"voice": "Aoede"}, "Puck") == "Aoede"
+    assert _resolve_interview_voice({}, "Puck") == "Puck"

@@ -83,6 +83,7 @@ function buildInterviewFormData(form) {
   fd.append('jd_text', form.jd.trim())
   if (form.requests) fd.append('special_requirements', form.requests.trim())
   fd.append('interview_language', form.language || 'en')
+  if (form.voice) fd.append('interview_voice', form.voice)
   if (form.seniority) fd.append('seniority', form.seniority)
   if (form.cvFile) fd.append('cv_file', form.cvFile)
   if (form.scheduledAt) fd.append('scheduled_at', form.scheduledAt)

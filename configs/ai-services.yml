@@ -131,6 +131,6 @@ interview-agent:
 
   # ========== PROCTORING ==========
   # Cheating detection and reminder settings.
-  proctoring_cooldown_seconds: 15  # Seconds between spoken reminders
+  proctoring_cooldown_seconds: 5  # Seconds between spoken reminders
   proctoring_max_violations: 5       # Violations before ending interview
   proctoring_allow_interruptions: false  # Do not let candidate interrupt cheating warnings

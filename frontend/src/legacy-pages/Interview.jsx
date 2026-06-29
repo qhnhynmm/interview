@@ -5,6 +5,7 @@ import { Icon, Spinner } from '../components/icons.jsx'
 import { ReasoningStream } from '../components/ReasoningStream.jsx'
 import SchedulerModal from '../components/SchedulerModal.jsx'
 import { EMPTY } from '../constants/interview.js'
+import { LIVE_VOICES } from '../constants/voices.js'
 import { submitInterviewStream } from '../utils/interviews.js'
 
 function fmtScheduled(isoStr) {
@@ -171,6 +172,23 @@ export default function Interview({ onCreate }) {
               </select>
               <span className="hint">
                 The interview is conducted in this language.
+              </span>
+            </div>
+            <div className="field">
+              <label>Interviewer voice</label>
+              <select
+                className="select"
+                value={form.voice}
+                onChange={set('voice')}
+              >
+                {LIVE_VOICES.map((v) => (
+                  <option key={v.value} value={v.value}>
+                    {v.label} — {v.hint}
+                  </option>
+                ))}
+              </select>
+              <span className="hint">
+                AI interviewer speech (Gemini Live).
               </span>
             </div>
           </div>

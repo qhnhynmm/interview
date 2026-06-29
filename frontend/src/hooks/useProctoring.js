@@ -203,6 +203,12 @@ export function useProctoring(
       window.removeEventListener('blur', onBlur)
       window.removeEventListener('focus', comeBack)
     })
+    // Proctoring may activate while the candidate is already on another tab.
+    if (document.visibilityState === 'hidden') {
+      goAway(false)
+    } else if (!document.hasFocus()) {
+      goAway(true)
+    }
 
     // ── 3. Gaze + multiple faces (MediaPipe FaceLandmarker on the camera) ─────
     if (enableGaze || enableMultiFace) {

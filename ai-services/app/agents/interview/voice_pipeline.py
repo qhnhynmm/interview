@@ -26,6 +26,11 @@ def _resolve_interview_language(interview: dict[str, Any], fallback: str) -> str
     return raw or fallback
 
 
+def _resolve_interview_voice(interview: dict[str, Any], fallback: str) -> str:
+    raw = (interview.get("voice") or "").strip()
+    return raw or fallback
+
+
 def _gemini_language_code(language: str) -> str | None:
     lang = language.strip().lower()
     if lang in {"en", "english"}:
@@ -90,7 +95,7 @@ class VoicePipeline:
 
         kwargs: dict[str, Any] = {
             "model": settings.interview_live_model,
-            "voice": settings.interview_live_voice,
+            "voice": self.session.voice or settings.interview_live_voice,
             "api_key": api_key,
             "instructions": self.system_instructions(),
             "temperature": settings.interview_temperature,
@@ -155,9 +160,10 @@ class VoicePipeline:
         greeting = self.greeting_text()
         await self.publish_agent_message(ctx.room, greeting)
         logger.info(
-            "Speaking greeting for interview %s (gemini-live, language=%s)",
+            "Speaking greeting for interview %s (gemini-live, language=%s, voice=%s)",
             self.session.interview_id,
             self.session.language,
+            self.session.voice,
         )
         # Gemini Live RealtimeModel does not support session.say() — use generate_reply.
         lang_note = (
@@ -195,10 +201,12 @@ async def load_session(interview_id: str, settings: Settings | None = None) -> I
     plan_payload = {"plan": interview.get("plan") or {}}
     context = extract_interview_context(interview, plan_payload)
     language = _resolve_interview_language(interview, cfg.interview_language)
-    logger.info("Loaded interview %s with language=%s", interview_id, language)
+    voice = _resolve_interview_voice(interview, cfg.interview_live_voice)
+    logger.info("Loaded interview %s with language=%s voice=%s", interview_id, language, voice)
     return InterviewSession(
         interview_id=interview_id,
         language=language,
+        voice=voice,
         plan=context,
     )
 
@@ -214,7 +222,11 @@ async def entrypoint(ctx: JobContext) -> None:
         session = await load_session(interview_id, settings)
     except Exception:
         logger.exception("Failed to load interview context for %s — using minimal session", interview_id)
-        session = InterviewSession(interview_id=interview_id, language=settings.interview_language)
+        session = InterviewSession(
+            interview_id=interview_id,
+            language=settings.interview_language,
+            voice=settings.interview_live_voice,
+        )
 
     pipeline = VoicePipeline(session, settings)
     await pipeline.run(ctx)

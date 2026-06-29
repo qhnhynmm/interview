@@ -24,6 +24,7 @@ class InterviewListItem(BaseModel):
     meeting_url: str
     status: str
     language: str
+    voice: str = "Puck"
     report: dict | None = None
 
     model_config = {"from_attributes": True}
@@ -90,6 +91,7 @@ class InterviewDetail(BaseModel):
     candidate_email: str
     position: str
     language: str
+    voice: str = "Puck"
     status: str
     scheduled_at: datetime | None
     meeting_url: str

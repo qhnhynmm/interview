@@ -3,11 +3,11 @@
 // You can override via NEXT_PUBLIC_* env vars when needed.
 
 const defaults = {
-  flicker_ms: 300,
+  flicker_ms: 50,
   blur_grace_ms: 1200,
   monitor_repeat_ms: 8000,
   gaze_repeat_ms: 5000,
-  tab_repeat_ms: 6000,
+  tab_repeat_ms: 3000,
   face_repeat_ms: 400,
   phone_repeat_ms: 250,
   multi_grace_ms: 700,

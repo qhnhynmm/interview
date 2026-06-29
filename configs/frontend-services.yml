@@ -16,7 +16,7 @@ frontend:
 proctoring:
   # ── Timing constants ───────────────────────────────────────────────────────
   # Ignore focus blips shorter than this (ms)
-  flicker_ms: 300
+  flicker_ms: 50
   # A bare window blur (OS popup, Bluetooth / audio-device-switch dialog, system
   # notification) steals focus briefly without the candidate leaving. Wait this
   # long and re-verify focus before counting a blur as a tab switch (ms).
@@ -24,7 +24,7 @@ proctoring:
   # Re-check intervals while violation persists (ms)
   monitor_repeat_ms: 8000
   gaze_repeat_ms: 5000
-  tab_repeat_ms: 6000
+  tab_repeat_ms: 3000
   face_repeat_ms: 400
   phone_repeat_ms: 250
   # Grace windows to bridge dropped frames (ms)

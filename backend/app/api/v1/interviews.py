@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_hr_user
 from app.config import get_settings
+from app.constants.voices import normalize_live_voice
 from app.database import get_db
 from app.models.interview import Interview, InterviewStatus, new_interview_id
 from app.models.user import User
@@ -63,6 +64,7 @@ def _to_list_item(row: Interview) -> InterviewListItem:
         meeting_url=_meeting_url(row.id),
         status=row.status.value,
         language=row.language,
+        voice=row.voice or "Puck",
         report=row.report,
     )
 
@@ -74,6 +76,7 @@ def _to_detail(row: Interview) -> InterviewDetail:
         candidate_email=row.candidate_email,
         position=row.position,
         language=row.language,
+        voice=row.voice or "Puck",
         status=row.status.value,
         scheduled_at=row.scheduled_at,
         meeting_url=_meeting_url(row.id),
@@ -238,6 +241,7 @@ async def generate_link_stream(
     jd_text: str = Form(...),
     special_requirements: str = Form(""),
     interview_language: str = Form("en"),
+    interview_voice: str = Form("Puck"),
     seniority: str = Form(""),
     scheduled_at: str | None = Form(None),
     cv_file: UploadFile = File(...),
@@ -259,6 +263,7 @@ async def generate_link_stream(
         jd_text=jd,
         special_requirements=special_requirements.strip() or None,
         interview_language=interview_language,
+        interview_voice=interview_voice,
         seniority=seniority.strip() or None,
         scheduled_at=_parse_scheduled_at(scheduled_at),
         cv_file=cv_file,
@@ -274,6 +279,7 @@ async def generate_link(
     jd_text: str = Form(...),
     special_requirements: str = Form(""),
     interview_language: str = Form("en"),
+    interview_voice: str = Form("Puck"),
     seniority: str = Form(""),
     scheduled_at: str | None = Form(None),
     cv_file: UploadFile = File(...),
@@ -287,6 +293,7 @@ async def generate_link(
     jd = jd_text.strip()
     requests = special_requirements.strip() or None
     lang = (interview_language or "en").strip() or "en"
+    voice = normalize_live_voice(interview_voice)
     level = seniority.strip() or None
 
     if not name or not role or not jd:
@@ -331,6 +338,7 @@ async def generate_link(
         position=role,
         seniority=level,
         language=lang,
+        voice=voice,
         jd_text=jd,
         special_requirements=requests,
         cv_filename=cv_filename,

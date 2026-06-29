@@ -19,6 +19,7 @@ from app.services.cv_extractor import extract_cv
 from app.services.planning import build_mock_plan
 from app.services.assignment import MOCK_ASSIGNMENT
 from app.services.slots import instant_available
+from app.constants.voices import normalize_live_voice
 from app.services.storage import save_cv
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ async def generate_link_event_stream(
     jd_text: str,
     special_requirements: str | None,
     interview_language: str,
+    interview_voice: str,
     seniority: str | None,
     scheduled_at: datetime | None,
     cv_file: UploadFile,
@@ -53,6 +55,7 @@ async def generate_link_event_stream(
     role = position.strip()
     jd = jd_text.strip()
     lang = (interview_language or "en").strip() or "en"
+    voice = normalize_live_voice(interview_voice)
     level = seniority.strip() or None
 
     try:
@@ -173,6 +176,7 @@ async def generate_link_event_stream(
             position=role,
             seniority=level,
             language=lang,
+            voice=voice,
             jd_text=jd,
             special_requirements=special_requirements,
             cv_filename=cv_filename,
@@ -199,6 +203,7 @@ async def generate_link_event_stream(
             "meeting_url": meeting_url,
             "status": row.status.value,
             "language": row.language,
+            "voice": row.voice,
             "report": row.report,
         }
         yield _sse({"type": "done", "interview": interview_item}, event="done")

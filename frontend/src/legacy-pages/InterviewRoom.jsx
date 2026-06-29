@@ -11,7 +11,8 @@ import { fetchInterview, uploadRecording, uploadChunk } from '@/utils/interviews
 import '@/App.css'
 
 const INTRO_SECS = 15
-const PROCTORING_DELAY_MS = 25000
+// Tab/monitor: instant when chat starts. Camera AI (gaze/face/phone): brief warmup.
+const VISION_PROCTORING_DELAY_MS = 3000
 
 // ── Mic button — shared between interview mode (large) and code-mode nav (compact) ──
 
@@ -164,8 +165,8 @@ export default function InterviewRoom({ interviewId }) {
 
   // 15-second intro: mic is locked while agent introduces itself
   const [introSecsLeft, setIntroSecsLeft] = useState(null)
-  // Cheating detection starts only after 25s
   const [proctoringActive, setProctoringActive] = useState(false)
+  const [visionProctoring, setVisionProctoring] = useState(false)
   const [proctorAlert, setProctorAlert] = useState(null)
   const chatStartedRef = useRef(false)
 
@@ -269,12 +270,20 @@ export default function InterviewRoom({ interviewId }) {
     }
   }, [finalizeRecording])
 
-  // Cheating detection: delayed by 25s from when chatting begins
+  const chatting = roomPhase === 'chatting'
+
+  // Tab/monitor fire immediately; MediaPipe waits for camera warmup.
   useProctoring(
     interviewId,
-    proctoringActive,
+    chatting,
     recorder.stream,
-    { gazeThresholdMs: 5000, onEvent: handleProctorEvent },
+    {
+      enableGaze: visionProctoring,
+      enableMultiFace: visionProctoring,
+      enablePhone: visionProctoring,
+      gazeThresholdMs: 5000,
+      onEvent: handleProctorEvent,
+    },
   )
 
   useEffect(() => {
@@ -283,9 +292,20 @@ export default function InterviewRoom({ interviewId }) {
     return () => clearTimeout(timer)
   }, [proctorAlert])
 
-  // When the agent joins and chatting begins: start the 15s mic lock + 25s proctoring delay
   useEffect(() => {
-    if (roomPhase !== 'chatting' || chatStartedRef.current) return
+    if (!chatting) {
+      setProctoringActive(false)
+      setVisionProctoring(false)
+      return
+    }
+    setProctoringActive(true)
+    const visionTimer = setTimeout(() => setVisionProctoring(true), VISION_PROCTORING_DELAY_MS)
+    return () => clearTimeout(visionTimer)
+  }, [chatting])
+
+  // Intro mic lock countdown when chatting begins
+  useEffect(() => {
+    if (!chatting || chatStartedRef.current) return
     chatStartedRef.current = true
 
     let remaining = INTRO_SECS
@@ -297,13 +317,8 @@ export default function InterviewRoom({ interviewId }) {
       if (remaining <= 0) clearInterval(countdownId)
     }, 1000)
 
-    const procTimerId = setTimeout(() => setProctoringActive(true), PROCTORING_DELAY_MS)
-
-    return () => {
-      clearInterval(countdownId)
-      clearTimeout(procTimerId)
-    }
-  }, [roomPhase])
+    return () => clearInterval(countdownId)
+  }, [chatting])
 
   useEffect(() => {
     fetchInterview(interviewId)

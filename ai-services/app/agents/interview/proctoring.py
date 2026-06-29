@@ -196,6 +196,7 @@ class ProctoringHandler:
             tier = escalation_tier(count)
             text = warning_text(language=self._language, kind=kind, tier=tier)
 
+            # UI + mic first so the candidate sees/hears the lock before TTS latency.
             await self._publish(
                 {
                     "type": "ui:proctor_alert",
@@ -205,7 +206,6 @@ class ProctoringHandler:
                     "violation_count": count,
                 },
             )
-
             await self._mute_candidate(lock_id)
             await self._speak_verbatim(text)
 

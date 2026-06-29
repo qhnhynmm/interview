@@ -1,3 +1,5 @@
+"""Dev HTTP shim for MCP tools (POST /mcp-http/tools/call). Production uses FastMCP SSE."""
+
 import json
 import logging
 from typing import Any
@@ -6,10 +8,13 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.infra.tracing import set_span_attributes, span_error, span_ok, trace_span
-from app.mcp.tools import ALL_TOOLS
+from app.mcp.assignment_tools import ASSIGNMENT_TOOL_REGISTRY
+from app.mcp.interview_tools import INTERVIEW_TOOL_REGISTRY
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/mcp", tags=["mcp"])
+router = APIRouter(prefix="/mcp-http", tags=["mcp-http"])
+
+ALL_TOOLS = {**INTERVIEW_TOOL_REGISTRY, **ASSIGNMENT_TOOL_REGISTRY}
 
 
 class ToolCallRequest(BaseModel):
@@ -53,16 +58,6 @@ async def call_tool(body: ToolCallRequest) -> ToolCallResponse:
         )
         span_ok()
         return ToolCallResponse(name=body.name, result=result)
-
-
-@router.get("/sse")
-async def mcp_sse_info() -> dict[str, str]:
-    """SSE transport placeholder — swap for FastMCP when interview worker connects."""
-    return {
-        "transport": "sse",
-        "status": "scaffold",
-        "hint": "Use POST /mcp/tools/call during development",
-    }
 
 
 @router.post("/tools/call/raw")

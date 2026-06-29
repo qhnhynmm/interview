@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Literal
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

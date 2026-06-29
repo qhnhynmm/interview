@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  title: Aurelia Interview MCP Backend Dependencies
+  version: 1.0.0
+paths:
+  /api/v1/interviews/active:
+    get:
+      summary: List in-progress interviews (MCP list_active_interviews)
+      parameters:
+        - in: header
+          name: X-Service-Key
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Active sessions
+  /api/v1/interviews/{id}:
+    get:
+      summary: Full interview context (MCP get_interview_context)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: InterviewDetail
+  /api/v1/interviews/{id}/transcript:
+    get:
+      summary: Conversation history
+      parameters:
+        - in: header
+          name: X-Service-Key
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: TranscriptResponse
+  /api/v1/interviews/{id}/transcript/append:
+    post:
+      summary: Append transcript turn
+      parameters:
+        - in: header
+          name: X-Service-Key
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role, content]
+              properties:
+                role: { type: string, enum: [agent, candidate] }
+                content: { type: string }
+                ts: { type: number }
+      responses:
+        "204": { description: Appended }
+  /api/v1/interviews/{id}/switch-mode:
+    post:
+      summary: Switch UI mode + LiveKit broadcast
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode: { type: string, enum: [interview, code] }
+      responses:
+        "200": { description: SwitchModeResponse }
+  /api/v1/interviews/{id}/send-agent-message:
+    post:
+      summary: LiveKit ui:agent_message + transcript
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string }
+      responses:
+        "204": { description: Sent }
+  /api/v1/interviews/{id}/set-assistant:
+    post:
+      summary: Toggle coding assistant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200": { description: CodingAssistantStatus }
+  /api/v1/interviews/{id}/coding-assistant:
+    get:
+      summary: Read assistant status
+      responses:
+        "200": { description: CodingAssistantStatus }
+    post:
+      summary: Alias for set-assistant
+      responses:
+        "200": { description: CodingAssistantStatus }
+  /api/v1/interviews/{id}/end:
+    post:
+      summary: End interview (MCP end_interview)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+                detail: { type: string }
+      responses:
+        "204": { description: Ended }

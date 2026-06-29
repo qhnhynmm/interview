@@ -72,6 +72,8 @@ interview-agent:
 
   # ai-services MCP toolbox (SSE) and backend API.
   mcp_sse_url: "http://localhost:8001/mcp/sse"
+  mcp_assignment_sse_url: "http://localhost:8001/assignment-mcp/sse"
+  mcp_http_timeout: 20
   backend_url: "http://localhost:8000"
 
   # Voice stack — Gemini Live API (native audio in/out, no separate STT/TTS).

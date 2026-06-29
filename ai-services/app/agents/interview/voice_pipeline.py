@@ -191,8 +191,8 @@ class VoicePipeline:
 async def load_session(interview_id: str, settings: Settings | None = None) -> InterviewSession:
     cfg = settings or get_settings()
     mcp = MCPClient(cfg)
-    interview = await mcp.get_interview(interview_id)
-    plan_payload = await mcp.get_interview_plan(interview_id)
+    interview = await mcp.get_interview_context(interview_id)
+    plan_payload = {"plan": interview.get("plan") or {}}
     context = extract_interview_context(interview, plan_payload)
     language = _resolve_interview_language(interview, cfg.interview_language)
     logger.info("Loaded interview %s with language=%s", interview_id, language)

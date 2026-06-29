@@ -101,6 +101,7 @@ services:
       LIVEKIT_PUBLIC_URL: ${LIVEKIT_PUBLIC_URL:-ws://127.0.0.1:7880}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-}
 
   frontend:
     build:
@@ -147,6 +148,7 @@ services:
       OTEL_ENABLED: "true"
       OTEL_OTLP_ENDPOINT: http://127.0.0.1:6006/v1/traces
       OTEL_SENSITIVE: "true"
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-}
 
   livekit:
     image: livekit/livekit-server:latest
@@ -181,6 +183,7 @@ services:
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
       LIVEKIT_WORKER_PORT: "8082"
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-}
 
 volumes:
   postgres_data:

@@ -1,4 +1,4 @@
-"""HTTP client for ai-services MCP tool registry (dev: POST /mcp/tools/call)."""
+"""HTTP client for MCP toolbox (dev: POST /mcp-http/tools/call; prod: LiveKit MCPServerHTTP SSE)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,8 @@ class MCPClient:
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
         base = self._settings.mcp_sse_url.rstrip("/")
-        self._call_url = base.replace("/mcp/sse", "/mcp/tools/call")
+        # Dev HTTP shim lives alongside SSE mount (replace /mcp/sse → /mcp-http/tools/call).
+        self._call_url = base.replace("/mcp/sse", "/mcp-http/tools/call")
 
     async def call(self, name: str, **arguments: Any) -> Any:
         payload = {"name": name, "arguments": arguments}
@@ -30,9 +31,12 @@ class MCPClient:
             logger.warning("MCP tool %s failed: %s", name, exc)
             raise
 
-    async def get_interview(self, interview_id: str) -> dict[str, Any]:
-        result = await self.call("get_interview", interview_id=interview_id)
+    async def get_interview_context(self, interview_id: str) -> dict[str, Any]:
+        result = await self.call("get_interview_context", interview_id=interview_id)
         return result if isinstance(result, dict) else {}
+
+    async def get_interview(self, interview_id: str) -> dict[str, Any]:
+        return await self.get_interview_context(interview_id)
 
     async def get_interview_plan(self, interview_id: str) -> dict[str, Any]:
         result = await self.call("get_interview_plan", interview_id=interview_id)

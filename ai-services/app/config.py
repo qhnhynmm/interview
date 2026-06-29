@@ -101,6 +101,11 @@ class Settings(BaseSettings):
     agent_name: str = Field(default=_INTERVIEW_YAML.get("agent_name", "interview-agent"))
     interview_language: str = Field(default=_INTERVIEW_YAML.get("language", "en"))
     mcp_sse_url: str = Field(default=_INTERVIEW_YAML.get("mcp_sse_url", "http://localhost:8001/mcp/sse"))
+    mcp_assignment_sse_url: str = Field(
+        default=_INTERVIEW_YAML.get("mcp_assignment_sse_url", "http://localhost:8001/assignment-mcp/sse"),
+    )
+    mcp_http_timeout: float = Field(default=float(_INTERVIEW_YAML.get("mcp_http_timeout", 20)))
+    internal_service_key: str = Field(default="", validation_alias="INTERNAL_SERVICE_KEY")
     interview_backend_url: str = Field(default=_INTERVIEW_YAML.get("backend_url", "http://localhost:8000"))
 
     interview_live_model: str = Field(

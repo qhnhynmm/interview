@@ -7,7 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.config import get_settings
 from app.infra.tracing import init_tracing, shutdown_tracing
-from app.mcp.server import router as mcp_router
+from app.mcp.assignment_tools import assignment_mcp
+from app.mcp.interview_tools import interview_mcp
+from app.mcp.server import router as mcp_http_router
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -32,7 +34,9 @@ def create_app() -> FastAPI:
     )
 
     application.include_router(api_router, prefix=settings.api_prefix)
-    application.include_router(mcp_router)
+    application.include_router(mcp_http_router)
+    application.mount("/mcp", interview_mcp.sse_app(mount_path="/"))
+    application.mount("/assignment-mcp", assignment_mcp.sse_app(mount_path="/"))
 
     if settings.otel_enabled:
         try:

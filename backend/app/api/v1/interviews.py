@@ -85,6 +85,9 @@ def _to_detail(row: Interview) -> InterviewDetail:
         sandbox_files=row.sandbox_files,
         cognitive_answers=row.cognitive_answers,
         proctoring_events=list(row.proctoring_events or []),
+        conversation_history=list(row.conversation_history or []),
+        last_run_result=row.last_run_result,
+        ui_mode=row.ui_mode or "interview",
     )
 
 

@@ -58,6 +58,9 @@ class Interview(Base):
     sandbox_files: Mapped[dict | None] = mapped_column(JsonType, nullable=True)
     cognitive_answers: Mapped[dict | None] = mapped_column(JsonType, nullable=True)
     proctoring_events: Mapped[list | None] = mapped_column(JsonType, nullable=True)
+    conversation_history: Mapped[list | None] = mapped_column(JsonType, nullable=True)
+    last_run_result: Mapped[dict | None] = mapped_column(JsonType, nullable=True)
+    ui_mode: Mapped[str] = mapped_column(String(16), default="interview")
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

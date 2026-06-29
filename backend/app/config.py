@@ -86,6 +86,7 @@ class Settings(BaseSettings):
         default=float(_YAML.get("gemini_request_timeout", 60.0)),
         validation_alias="GEMINI_REQUEST_TIMEOUT",
     )
+    internal_service_key: str = Field(default="", validation_alias="INTERNAL_SERVICE_KEY")
 
     @property
     def minio_endpoint_url(self) -> str:

@@ -1,5 +1,7 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from app.config import get_settings
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
@@ -43,3 +45,17 @@ def require_hr_user(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role not in (UserRole.hr, UserRole.admin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="HR access required")
     return current_user
+
+
+def require_service_key(
+    x_service_key: str | None = Header(None, alias="X-Service-Key"),
+) -> None:
+    """Gate agent/MCP write endpoints. Skipped when INTERNAL_SERVICE_KEY is unset (dev)."""
+    expected = get_settings().internal_service_key.strip()
+    if not expected:
+        return
+    if not x_service_key or x_service_key != expected:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or missing X-Service-Key",
+        )

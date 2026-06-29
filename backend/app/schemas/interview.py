@@ -47,6 +47,43 @@ class EndInterviewBody(BaseModel):
     detail: str = ""
 
 
+class TranscriptTurnBody(BaseModel):
+    role: str
+    content: str
+    ts: float | None = None
+
+
+class TranscriptResponse(BaseModel):
+    interview_id: str
+    conversation_history: list[dict] = Field(default_factory=list)
+
+
+class SwitchModeBody(BaseModel):
+    mode: str
+
+
+class SwitchModeResponse(BaseModel):
+    mode: str
+    finished: bool = False
+    assignment: dict | None = None
+    current_code: str | None = None
+    sandbox_files: dict | None = None
+    cognitive_answers: dict | None = None
+    problem: dict | None = None
+
+
+class AgentMessageBody(BaseModel):
+    message: str
+
+
+class AssistantToggleBody(BaseModel):
+    enabled: bool
+
+
+class CodingAssistantStatus(BaseModel):
+    enabled: bool
+
+
 class InterviewDetail(BaseModel):
     id: str
     candidate_name: str
@@ -64,5 +101,8 @@ class InterviewDetail(BaseModel):
     sandbox_files: dict | None = None
     cognitive_answers: dict | None = None
     proctoring_events: list[dict] = Field(default_factory=list)
+    conversation_history: list[dict] = Field(default_factory=list)
+    last_run_result: dict | None = None
+    ui_mode: str = "interview"
 
     model_config = {"from_attributes": True}

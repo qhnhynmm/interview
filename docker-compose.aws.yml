@@ -1,0 +1,9 @@
+# AWS EC2 overlay — dùng cùng docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build
+#
+# LiveKit cần use_external_ip trên cloud + mở UDP 50000-50100 trong Security Group.
+
+services:
+  livekit:
+    volumes:
+      - ./configs/livekit.aws.yaml:/etc/livekit.yaml:ro

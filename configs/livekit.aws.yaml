@@ -1,0 +1,21 @@
+# LiveKit — AWS EC2 (ap-southeast-2 hoặc region khác).
+# Keys khớp LIVEKIT_API_KEY / LIVEKIT_API_SECRET trong .env.
+
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: true
+
+keys:
+  devkey: aurelia_dev_livekit_secret_32chars_min
+
+room:
+  auto_create: true
+  empty_timeout: 600
+  departure_timeout: 30
+
+logging:
+  level: info

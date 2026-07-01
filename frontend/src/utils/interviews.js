@@ -317,7 +317,18 @@ export async function uploadRecording(interviewId, blob) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.detail || 'Failed to upload recording')
   }
-  return res.json()
+  const data = await res.json()
+  if (!data.ok) throw new Error('Failed to upload recording')
+  return data
+}
+
+/** Append JWT query param so <video>/<audio> can reach HR-protected media URLs. */
+export function authenticatedMediaUrl(path) {
+  if (!path) return null
+  const token = getToken()
+  if (!token) return path
+  const sep = path.includes('?') ? '&' : '?'
+  return `${path}${sep}token=${encodeURIComponent(token)}`
 }
 
 export async function downloadReportPdf(interviewId, candidateName) {

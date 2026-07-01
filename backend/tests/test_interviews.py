@@ -21,6 +21,23 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+@pytest.fixture(autouse=True)
+def fast_ai(monkeypatch):
+    async def _mock_plan(**_kwargs):
+        return {
+            "competencies": [
+                {"name": "Technical depth", "weight": 0.6},
+                {"name": "Communication", "weight": 0.4},
+            ]
+        }
+
+    async def _mock_assignment(**_kwargs):
+        return {"type": "coding", "coding": {"title": "Two Sum", "ai_assistant_enabled": False}}
+
+    monkeypatch.setattr("app.api.v1.interviews.fetch_interview_plan", _mock_plan)
+    monkeypatch.setattr("app.api.v1.interviews.fetch_assignment", _mock_assignment)
+
+
 @pytest.fixture()
 def client():
     Base.metadata.create_all(bind=engine)

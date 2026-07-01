@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Icon, Spinner } from '@/components/icons.jsx'
-import { downloadReportPdf, fetchCandidate, subscribeToEvents } from '@/utils/interviews.js'
+import { authenticatedMediaUrl, downloadReportPdf, fetchCandidate, subscribeToEvents } from '@/utils/interviews.js'
 import { STATUS_LABEL } from '@/constants/candidate.js'
 import '@/App.css'
 
@@ -148,6 +148,7 @@ export default function CandidateProfile({ candidateId }) {
     month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
   }) : '—'
   const transcript = Array.isArray(data.conversation_history) ? data.conversation_history : []
+  const recordingSrc = authenticatedMediaUrl(data.recording_url)
 
   return (
     <div className="page container" style={{ paddingTop: 28, paddingBottom: 48 }}>
@@ -214,10 +215,10 @@ export default function CandidateProfile({ candidateId }) {
           </Section>
 
           <Section icon="video" title="Interview recording">
-            {data.recording_url ? (
+            {recordingSrc ? (
               <>
                 <video
-                  src={data.recording_url}
+                  src={recordingSrc}
                   controls
                   playsInline
                   preload="metadata"
@@ -228,7 +229,7 @@ export default function CandidateProfile({ candidateId }) {
                 />
                 <a
                   className="btn btn--ghost btn--sm"
-                  href={data.recording_url}
+                  href={recordingSrc}
                   target="_blank"
                   rel="noreferrer"
                   style={{ marginTop: 10 }}

@@ -497,6 +497,11 @@ async def code_assist(
     db: Session = Depends(get_db),
 ) -> CodeAssistResponse:
     row = _get_row(db, interview_id)
+    if not _assistant_enabled(row):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Coding assistant is disabled for this interview",
+        )
     messages = [{"role": m.role, "content": m.content} for m in body.messages]
     reply = await fetch_code_assist(
         interview_id=interview_id,

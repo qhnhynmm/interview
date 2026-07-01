@@ -65,8 +65,6 @@ class Settings(BaseSettings):
     planning_analyst_max_tokens: int = Field(default=int(_YAML.get("planning_analyst_max_tokens", 1100)))
 
     assignment_model: str = Field(default=_YAML.get("assignment_model", "gemini-3.1-flash-lite"))
-    assignment_temperature: float = Field(default=float(_YAML.get("assignment_temperature", 0.4)))
-    assignment_max_tokens: int = Field(default=int(_YAML.get("assignment_max_tokens", 8192)))
 
     coding_assistant_model: str = Field(default=_YAML.get("coding_assistant_model", "google/gemma-4-31b-it"))
     coding_assistant_temperature: float = Field(default=float(_YAML.get("coding_assistant_temperature", 0.3)))
@@ -123,25 +121,6 @@ class Settings(BaseSettings):
     )
     interview_max_tokens: int = Field(default=int(_INTERVIEW_YAML.get("interview_max_tokens", 1000)))
 
-    stt_base_url: str = Field(default=_INTERVIEW_YAML.get("stt_base_url", ""))
-    stt_model: str = Field(default=_INTERVIEW_YAML.get("stt_model", "SenseVoiceSmall"))
-    stt_api_key: str = Field(default="local", validation_alias="STT_API_KEY")
-    stt_vi_base_url: str = Field(default=_INTERVIEW_YAML.get("stt_vi_base_url", ""))
-    stt_vi_model: str = Field(default=_INTERVIEW_YAML.get("stt_vi_model", "phowhisper-medium"))
-    stt_vi_api_key: str = Field(default="local", validation_alias="STT_VI_API_KEY")
-
-    tts_base_url: str = Field(default=_INTERVIEW_YAML.get("tts_base_url", ""))
-    tts_model: str = Field(default=_INTERVIEW_YAML.get("tts_model", "tts-1"))
-    tts_voice: str = Field(default=_INTERVIEW_YAML.get("tts_voice", "af_bella"))
-    tts_response_format: str = Field(default=_INTERVIEW_YAML.get("tts_response_format", "wav"))
-    tts_api_key: str = Field(default="local", validation_alias="TTS_API_KEY")
-    tts_vi_base_url: str = Field(default=_INTERVIEW_YAML.get("tts_vi_base_url", ""))
-    tts_vi_model: str = Field(default=_INTERVIEW_YAML.get("tts_vi_model", "tts-1"))
-    tts_vi_voice: str = Field(default=_INTERVIEW_YAML.get("tts_vi_voice", "main"))
-    tts_vi_api_key: str = Field(default="local", validation_alias="TTS_VI_API_KEY")
-
-    duration_minutes: int = Field(default=int(_INTERVIEW_YAML.get("duration_minutes", 15)))
-    barge_in: bool = Field(default=bool(_INTERVIEW_YAML.get("barge_in", False)))
     silence_threshold_ms: int = Field(default=int(_INTERVIEW_YAML.get("silence_threshold_ms", 1500)))
 
     proctoring_cooldown_seconds: int = Field(
@@ -149,9 +128,6 @@ class Settings(BaseSettings):
     )
     proctoring_max_violations: int = Field(
         default=int(_INTERVIEW_YAML.get("proctoring_max_violations", 5)),
-    )
-    proctoring_allow_interruptions: bool = Field(
-        default=bool(_INTERVIEW_YAML.get("proctoring_allow_interruptions", False)),
     )
 
     @property
@@ -216,48 +192,6 @@ class Settings(BaseSettings):
         if self.gemini_api_key.strip() and self.gemini_model.strip():
             return self.gemini_model.strip()
         return self.interview_openai_model
-
-    @property
-    def interview_stt_base_url(self) -> str:
-        if self.interview_language.lower().startswith("vi") and self.stt_vi_base_url.strip():
-            return self.stt_vi_base_url.rstrip("/") + "/"
-        return self.stt_base_url.rstrip("/") + "/" if self.stt_base_url.strip() else ""
-
-    @property
-    def interview_stt_model(self) -> str:
-        if self.interview_language.lower().startswith("vi") and self.stt_vi_model.strip():
-            return self.stt_vi_model
-        return self.stt_model
-
-    @property
-    def interview_stt_api_key(self) -> str:
-        if self.interview_language.lower().startswith("vi"):
-            return self.stt_vi_api_key.strip() or "local"
-        return self.stt_api_key.strip() or "local"
-
-    @property
-    def interview_tts_base_url(self) -> str:
-        if self.interview_language.lower().startswith("vi") and self.tts_vi_base_url.strip():
-            return self.tts_vi_base_url.rstrip("/") + "/"
-        return self.tts_base_url.rstrip("/") + "/" if self.tts_base_url.strip() else ""
-
-    @property
-    def interview_tts_model(self) -> str:
-        if self.interview_language.lower().startswith("vi") and self.tts_vi_model.strip():
-            return self.tts_vi_model
-        return self.tts_model
-
-    @property
-    def interview_tts_voice(self) -> str:
-        if self.interview_language.lower().startswith("vi") and self.tts_vi_voice.strip():
-            return self.tts_vi_voice
-        return self.tts_voice
-
-    @property
-    def interview_tts_api_key(self) -> str:
-        if self.interview_language.lower().startswith("vi"):
-            return self.tts_vi_api_key.strip() or "local"
-        return self.tts_api_key.strip() or "local"
 
     @property
     def planning_analyst_effective_model(self) -> str:

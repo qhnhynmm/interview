@@ -29,10 +29,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = Field(default=_YAML.get("app_name", "Aurelia Backend"))
-    app_env: str = Field(default=_YAML.get("app_env", "development"))
     api_prefix: str = Field(default=_YAML.get("api_prefix", "/api/v1"))
-    host: str = Field(default=_YAML.get("host", "0.0.0.0"))
-    port: int = Field(default=int(_YAML.get("port", 8000)))
 
     cors_origins: str = Field(default=_YAML.get("cors_origins", "*"))
     database_url: str = Field(
@@ -82,7 +79,6 @@ class Settings(BaseSettings):
     minio_bucket_cvs: str = Field(default=_YAML.get("minio_bucket_cvs", "cvs"))
     minio_bucket_reports: str = Field(default=_YAML.get("minio_bucket_reports", "reports"))
     minio_bucket_recordings: str = Field(default=_YAML.get("minio_bucket_recordings", "recordings"))
-    recording_url_ttl: int = Field(default=int(_YAML.get("recording_url_ttl", 604800)))
     minio_access_key: str = Field(default="", validation_alias="MINIO_ACCESS_KEY")
     minio_secret_key: str = Field(default="", validation_alias="MINIO_SECRET_KEY")
 

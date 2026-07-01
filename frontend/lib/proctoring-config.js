@@ -1,6 +1,5 @@
-// Proctoring configuration for Next.js
-// Defaults come from configs/frontend-services.yml (copied here for build/runtime safety).
-// You can override via NEXT_PUBLIC_* env vars when needed.
+// Proctoring configuration for Next.js (single source of truth).
+// Override via NEXT_PUBLIC_PROCTORING_* env vars when needed.
 
 const defaults = {
   flicker_ms: 50,

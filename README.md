@@ -13,40 +13,68 @@ Aurelia phục vụ hai nhóm người dùng trên cùng một hệ thống:
 
 ## Screenshots
 
+### HR Workspace
+
 <p align="center">
-  <img src="docs/screenshots/01-home.png" alt="Trang chủ — giới thiệu 4-agent panel và luồng phỏng vấn" width="720" />
-  <br /><em>Trang chủ — HR workspace &amp; agent panel</em>
+  <img src="docs/screenshots/01-home.png" alt="Trang chủ Aurelia — 4-agent panel" width="720" />
+  <br /><em>Trang chủ — giới thiệu platform &amp; 4-agent panel</em>
 </p>
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/screenshots/03-interview-form.png" alt="Form tạo interview — CV, JD, slot" />
-      <br /><sub><b>Tạo interview</b> — upload CV, JD, chọn ngôn ngữ &amp; giọng AI</sub>
+      <img src="docs/screenshots/02-login.png" alt="Đăng nhập HR" />
+      <br /><sub><b>Đăng nhập</b> — HR auth</sub>
     </td>
     <td width="50%">
-      <img src="docs/screenshots/04-results.png" alt="Bảng kết quả phỏng vấn" />
-      <br /><sub><b>Kết quả</b> — danh sách buổi phỏng vấn &amp; trạng thái</sub>
+      <img src="docs/screenshots/03-interview-form.png" alt="Form tạo interview" />
+      <br /><sub><b>Tạo interview</b> — CV, JD, ngôn ngữ, giọng AI</sub>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="docs/screenshots/05-interview-room.png" alt="Quy định phỏng vấn trước khi vào phòng" />
-      <br /><sub><b>Phòng phỏng vấn</b> — quy định &amp; proctoring trước khi join LiveKit</sub>
+      <img src="docs/screenshots/04-results.png" alt="Bảng kết quả" />
+      <br /><sub><b>Kết quả</b> — trạng thái &amp; điểm số</sub>
     </td>
     <td width="50%">
-      <img src="docs/screenshots/06-candidate-profile.png" alt="Hồ sơ ứng viên — CV, report, transcript" />
-      <br /><sub><b>Hồ sơ ứng viên</b> — CV extract, recording, report, transcript</sub>
+      <img src="docs/screenshots/10-candidate-report.png" alt="Hồ sơ ứng viên với report" />
+      <br /><sub><b>Hồ sơ ứng viên</b> — report, competency scores, transcript</sub>
     </td>
   </tr>
 </table>
 
-<p align="center">
-  <img src="docs/screenshots/02-login.png" alt="Trang đăng nhập HR" width="480" />
-  <br /><em>Đăng nhập HR</em>
-</p>
+### Candidate Interview Flow
 
-> Tái tạo screenshots sau khi đổi UI: `node scripts/capture-screenshots.mjs --base http://localhost:8080 --token <JWT> --interview <itv-id>`
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/05-interview-rules.png" alt="Quy định phỏng vấn" />
+      <br /><sub><b>Quy định</b> — proctoring rules trước khi join</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/07-interview-ready.png" alt="Sẵn sàng bắt đầu phỏng vấn" />
+      <br /><sub><b>Ready</b> — welcome &amp; Start Interview</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/08-code-panel.png" alt="Code assignment panel" />
+      <br /><sub><b>Code mode</b> — Sandpack / Monaco + AI assistant</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/09-interview-complete.png" alt="Hoàn thành phỏng vấn" />
+      <br /><sub><b>Complete</b> — kết thúc buổi phỏng vấn</sub>
+    </td>
+  </tr>
+</table>
+
+> **Tái tạo toàn bộ screenshots** (cần stack đang chạy):
+>
+> ```bash
+> ./scripts/capture-screenshots.sh
+> ```
+>
+> Script tự tạo interview demo, seed report/code data, và chụp 10 ảnh vào `docs/screenshots/`.
 
 ---
 
@@ -236,7 +264,12 @@ interview/
 │   ├── livekit.yaml
 │   └── nginx/                # aurelia.io.vn reverse proxy
 │
+├── docs/
+│   └── screenshots/          # README gallery (capture-screenshots.sh)
 ├── scripts/
+│   ├── capture-screenshots.sh
+│   ├── capture-screenshots.mjs
+│   ├── seed-screenshot-data.py
 │   ├── verify-livekit.sh
 │   └── aws/                  # setup-ec2, deploy, setup-domain
 │

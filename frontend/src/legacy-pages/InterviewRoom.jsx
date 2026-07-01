@@ -330,6 +330,7 @@ export default function InterviewRoom({ interviewId }) {
         if (data.sandbox_files) setSavedFiles(data.sandbox_files)
         if (data.cognitive_answers) setSavedAnswers(data.cognitive_answers)
         if (typeof data.assignment_finished === 'boolean') setAssignmentFinished(data.assignment_finished)
+        if (data.ui_mode === 'code') setMode('code')
         if (data.status === 'completed') setPhase('ended')
         else if (data.status === 'canceled') setPhase('expired')
         else if (data.status === 'scheduled' && data.scheduled_at && new Date(data.scheduled_at) > new Date()) setPhase('not_yet')

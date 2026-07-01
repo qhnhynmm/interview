@@ -1,6 +1,29 @@
-# InterviewAI Aurelia
+<div align="center">
 
-**Nền tảng phỏng vấn tuyển dụng AI end-to-end** — từ tạo link phỏng vấn, phỏng vấn voice realtime, bài tập coding/cognitive, proctoring trong trình duyệt, đến chấm điểm và báo cáo PDF cho HR.
+# 🤖 InterviewAI Aurelia
+
+**Nền tảng phỏng vấn tuyển dụng AI — agentic, realtime, end-to-end**
+
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![LiveKit](https://img.shields.io/badge/LiveKit-Voice-FF6352?logo=livekit&logoColor=white)](https://livekit.io/)
+[![Gemini](https://img.shields.io/badge/Gemini-Live-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
+[![MCP](https://img.shields.io/badge/MCP-Tools-F59E0B)](ai-services/docs/MCP_TOOLBOX.md)
+[![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
+
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![MinIO](https://img.shields.io/badge/MinIO-S3--compatible-C72C48?logo=minio&logoColor=white)](https://min.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![License](https://img.shields.io/badge/License-Internal-lightgrey)]()
+
+[![Website](https://img.shields.io/badge/Website-aurelia.io.vn-2ea44f?style=for-the-badge)](https://aurelia.io.vn)
+[![Agents](https://img.shields.io/badge/4--Agent_Panel-Planning_·_Interview_·_Assignment_·_Inspector-2ea44f?style=for-the-badge)](ai-services/docs/PLANNING_AGENT.md)
+
+</div>
+
+---
 
 Aurelia phục vụ hai nhóm người dùng trên cùng một hệ thống:
 

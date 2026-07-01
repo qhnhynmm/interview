@@ -5,6 +5,8 @@ import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.security import validate_backend_settings
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,9 +31,13 @@ class Settings(BaseSettings):
     )
 
     app_name: str = Field(default=_YAML.get("app_name", "Aurelia Backend"))
+    app_env: str = Field(default=_YAML.get("app_env", "development"), validation_alias="APP_ENV")
     api_prefix: str = Field(default=_YAML.get("api_prefix", "/api/v1"))
 
-    cors_origins: str = Field(default=_YAML.get("cors_origins", "*"))
+    cors_origins: str = Field(
+        default="http://localhost:8080,http://localhost:3000",
+        validation_alias="CORS_ORIGINS",
+    )
     database_url: str = Field(
         default=f"sqlite:///{(BACKEND_ROOT / 'data' / 'aurelia.db').as_posix()}",
         validation_alias="DATABASE_URL",
@@ -125,4 +131,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    validate_backend_settings(settings)
+    return settings

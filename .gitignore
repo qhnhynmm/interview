@@ -1,6 +1,9 @@
 # ── Biến môi trường & secrets ──────────────────────────────────────────────
 .env
 .env.*
+# LiveKit server config — generated from templates + LIVEKIT_* in .env
+configs/livekit.yaml
+configs/livekit.aws.yaml
 !.env.example
 !**/.env.example
 !.env.*.example

@@ -27,6 +27,9 @@ if [[ -n "$PUBLIC_IP" ]] && grep -q 'YOUR_EC2_PUBLIC_IP' .env 2>/dev/null; then
   echo "Đã thay YOUR_EC2_PUBLIC_IP → ${PUBLIC_IP} trong .env"
 fi
 
+echo "Generating LiveKit config from .env..."
+./scripts/generate-livekit-config.sh configs/livekit.aws.yaml.template configs/livekit.aws.yaml
+
 echo "Building and starting Aurelia on AWS..."
 $COMPOSE up -d --build
 

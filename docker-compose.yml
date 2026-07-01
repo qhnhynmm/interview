@@ -4,7 +4,8 @@
 # tránh lỗi Docker port-forward gây "NetworkError" trên Swagger/browser.
 #
 # Khởi động TẤT CẢ (khuyến nghị):
-#   cp .env.example .env    # chỉnh GEMINI_API_KEY, JWT_SECRET nếu cần
+#   cp .env.example .env    # chỉnh GEMINI_API_KEY, JWT_SECRET, LIVEKIT_* nếu cần
+#   ./scripts/generate-livekit-config.sh
 #   docker compose up -d --build
 #   open http://localhost:8080        # frontend
 #   open http://localhost:8000/docs   # backend API
@@ -32,9 +33,9 @@
 #   curl http://localhost:8001/health
 #
 # LiveKit (voice rooms — Phase 0):
+#   ./scripts/generate-livekit-config.sh
 #   docker compose up -d livekit
 #   ./scripts/verify-livekit.sh
-#   WebSocket: ws://localhost:7880  |  API keys: devkey / secret (see .env.example)
 #
 # Interview worker (voice agent — Phase 2):
 #   docker compose up -d interview-worker
@@ -43,6 +44,24 @@
 # Agent tracing UI (tùy chọn): http://localhost:6006
 
 services:
+  livekit-config:
+    image: python:3.12-alpine
+    container_name: aurelia-livekit-config
+    restart: "no"
+    network_mode: host
+    environment:
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?Set LIVEKIT_API_KEY in .env}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET in .env}
+      LIVEKIT_TEMPLATE: ${LIVEKIT_TEMPLATE:-configs/livekit.yaml.template}
+      LIVEKIT_OUTPUT: ${LIVEKIT_OUTPUT:-configs/livekit.yaml}
+    volumes:
+      - ./:/repo:rw
+    working_dir: /repo
+    command:
+      - /bin/sh
+      - -ec
+      - ./scripts/generate-livekit-config.sh "$${LIVEKIT_TEMPLATE}" "$${LIVEKIT_OUTPUT}"
+
   minio:
     image: minio/minio:latest
     container_name: aurelia-minio
@@ -87,7 +106,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      JWT_SECRET: ${JWT_SECRET:-dev-change-me-in-production}
+      APP_ENV: ${APP_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:3000}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-aurelia}:${POSTGRES_PASSWORD:-aurelia}@127.0.0.1:5432/${POSTGRES_DB:-aurelia}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
       MINIO_ENABLED: "true"
@@ -99,8 +120,8 @@ services:
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://localhost:8001}
       LIVEKIT_URL: ${LIVEKIT_URL:-ws://127.0.0.1:7880}
       LIVEKIT_PUBLIC_URL: ${LIVEKIT_PUBLIC_URL:-ws://127.0.0.1:7880}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?Set LIVEKIT_API_KEY in .env}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET in .env}
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-}
 
   frontend:
@@ -138,13 +159,16 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
+      APP_ENV: ${APP_ENV:-development}
       BACKEND_URL: http://127.0.0.1:8000
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      INTERVIEW_OPENAI_BASE_URL: ${INTERVIEW_OPENAI_BASE_URL:-https://api.openai.com/v1}
       LIVEKIT_URL: ${LIVEKIT_URL:-ws://127.0.0.1:7880}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?Set LIVEKIT_API_KEY in .env}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET in .env}
       OTEL_ENABLED: "true"
       OTEL_OTLP_ENDPOINT: http://127.0.0.1:6006/v1/traces
       OTEL_SENSITIVE: "true"
@@ -155,6 +179,9 @@ services:
     container_name: aurelia-livekit
     restart: unless-stopped
     network_mode: host
+    depends_on:
+      livekit-config:
+        condition: service_completed_successfully
     command: ["--config", "/etc/livekit.yaml", "--bind", "0.0.0.0"]
     volumes:
       - ./configs/livekit.yaml:/etc/livekit.yaml:ro
@@ -168,6 +195,8 @@ services:
     restart: unless-stopped
     network_mode: host
     depends_on:
+      livekit-config:
+        condition: service_completed_successfully
       livekit:
         condition: service_started
       ai-services:
@@ -175,13 +204,16 @@ services:
       backend:
         condition: service_started
     environment:
+      APP_ENV: ${APP_ENV:-development}
       BACKEND_URL: http://127.0.0.1:8000
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      INTERVIEW_OPENAI_BASE_URL: ${INTERVIEW_OPENAI_BASE_URL:-https://api.openai.com/v1}
       LIVEKIT_URL: ${LIVEKIT_URL:-ws://127.0.0.1:7880}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?Set LIVEKIT_API_KEY in .env}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET in .env}
       LIVEKIT_WORKER_PORT: "8082"
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-}
 

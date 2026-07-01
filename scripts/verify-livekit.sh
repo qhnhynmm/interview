@@ -2,10 +2,24 @@
 # Quick health check for local LiveKit (Phase 0).
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_ROOT"
+
+if [[ -f .env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 HOST="${LIVEKIT_HOST:-127.0.0.1}"
 PORT="${LIVEKIT_PORT:-7880}"
-API_KEY="${LIVEKIT_API_KEY:-devkey}"
-API_SECRET="${LIVEKIT_API_SECRET:-aurelia_dev_livekit_secret_32chars_min}"
+API_KEY="${LIVEKIT_API_KEY:?Set LIVEKIT_API_KEY in .env}"
+API_SECRET="${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET in .env}"
+
+if [[ ! -f configs/livekit.yaml ]]; then
+  ./scripts/generate-livekit-config.sh
+fi
 
 echo "==> LiveKit TCP ${HOST}:${PORT}"
 python3 - <<PY

@@ -6,12 +6,14 @@ from livekit.agents import WorkerOptions, cli
 from app.agents.interview.voice_pipeline import entrypoint
 from app.config import get_settings
 from app.infra.tracing import init_tracing, shutdown_tracing
+from app.security import validate_ai_settings
 
 logger = logging.getLogger(__name__)
 
 
 def run_worker() -> None:
     settings = get_settings()
+    validate_ai_settings(settings)
     if not settings.livekit_api_key or not settings.livekit_api_secret:
         logger.error(
             "LIVEKIT_API_KEY and LIVEKIT_API_SECRET are required for the interview worker"

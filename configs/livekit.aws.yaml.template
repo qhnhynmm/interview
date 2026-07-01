@@ -1,5 +1,4 @@
-# LiveKit — AWS EC2 (ap-southeast-2 hoặc region khác).
-# Keys khớp LIVEKIT_API_KEY / LIVEKIT_API_SECRET trong .env.
+# LiveKit — AWS EC2 / cloud. Generated at runtime — do not edit livekit.aws.yaml directly.
 
 port: 7880
 
@@ -10,7 +9,7 @@ rtc:
   use_external_ip: true
 
 keys:
-  devkey: aurelia_dev_livekit_secret_32chars_min
+  __LIVEKIT_API_KEY__: __LIVEKIT_API_SECRET__
 
 room:
   auto_create: true

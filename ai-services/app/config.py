@@ -5,6 +5,8 @@ import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.security import validate_ai_settings
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AI_SERVICES_ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,7 +32,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Aurelia AI Services"
-    app_env: str = Field(default=_YAML.get("app_env", "development"))
+    app_env: str = Field(default=_YAML.get("app_env", "development"), validation_alias="APP_ENV")
     api_prefix: str = "/api/v1"
     host: str = Field(default=_YAML.get("mcp_host", "0.0.0.0"))
     port: int = Field(default=int(_YAML.get("mcp_port", 8001)))
@@ -54,7 +56,10 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
-    openai_base_url: str = Field(default=_YAML.get("openai_base_url", "https://api.openai.com/v1"))
+    openai_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        validation_alias="OPENAI_BASE_URL",
+    )
     llm_provider: str = Field(default=_YAML.get("llm_provider", "gemini"), validation_alias="LLM_PROVIDER")
 
     planning_model: str = Field(default=_YAML.get("planning_model", "gemini-3.1-flash-lite"))
@@ -111,7 +116,8 @@ class Settings(BaseSettings):
     )
     interview_live_voice: str = Field(default=_INTERVIEW_YAML.get("live_voice", "Puck"))
     interview_openai_base_url: str = Field(
-        default=_INTERVIEW_YAML.get("openai_base_url", "https://api.openai.com/v1"),
+        default="https://api.openai.com/v1",
+        validation_alias="INTERVIEW_OPENAI_BASE_URL",
     )
     interview_openai_model: str = Field(
         default=_INTERVIEW_YAML.get("openai_model", "gemini-3.1-flash-lite"),
@@ -205,4 +211,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    validate_ai_settings(settings)
+    return settings

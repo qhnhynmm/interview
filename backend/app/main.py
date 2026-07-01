@@ -18,10 +18,16 @@ async def lifespan(_app: FastAPI):
         ensure_bucket(settings.minio_bucket_cvs)
         ensure_bucket(settings.minio_bucket_reports)
         ensure_bucket(settings.minio_bucket_recordings)
-    if not settings.gemini_api_key:
-        import logging
+    import logging
 
-        logging.getLogger(__name__).warning(
+    log = logging.getLogger(__name__)
+    if settings.app_env not in ("production", "prod") and settings.jwt_secret in {
+        "dev-change-me-in-production",
+        "change-me-to-a-long-random-string",
+    }:
+        log.warning("JWT_SECRET is still the dev default — set a strong secret before production")
+    if not settings.gemini_api_key:
+        log.warning(
             "GEMINI_API_KEY is not set — CV PDF/DOCX extraction will use placeholder text"
         )
     yield

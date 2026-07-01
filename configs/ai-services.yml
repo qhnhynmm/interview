@@ -3,6 +3,7 @@
 # Loaded by ai-services/app/config.py. Secrets stay in repo-root .env.
 
 ai-services:
+  app_env: "development"
   backend_url: "http://localhost:8000"
 
   mcp_host: "0.0.0.0"
@@ -11,7 +12,7 @@ ai-services:
   llm_provider: "gemini"
   gemini_base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
   gemini_model: "gemini-3.1-flash-lite"
-  openai_base_url: "https://maas-llm-aiplatform-hcm.api.vngcloud.vn/v1"
+  # OPENAI_BASE_URL — set in .env for MaaS / OpenAI-compatible gateways (never commit URLs with creds).
   planning_model: "gemini-3.1-flash-lite"
   planning_temperature: 0.4
   planning_max_tokens: 1536
@@ -50,8 +51,7 @@ interview-agent:
   interview_temperature: 0.5
   interview_max_tokens: 1000
 
-  # Fallback LLM for MCP code-analysis tools (non-voice).
-  openai_base_url: "https://maas-llm-aiplatform-hcm.api.vngcloud.vn/v1"
+  # Fallback LLM for MCP code-analysis tools (non-voice). Base URL via INTERVIEW_OPENAI_BASE_URL in .env.
   openai_model: "minimax/minimax-m2.5"
 
   silence_threshold_ms: 1500

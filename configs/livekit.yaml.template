@@ -11,7 +11,7 @@ rtc:
   use_external_ip: false
 
 keys:
-  devkey: aurelia_dev_livekit_secret_32chars_min
+  __LIVEKIT_API_KEY__: __LIVEKIT_API_SECRET__
 
 room:
   auto_create: true

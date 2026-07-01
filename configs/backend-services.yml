@@ -5,9 +5,10 @@
 
 backend:
   app_name: "Aurelia Backend"
+  app_env: "development"
   api_prefix: "/api/v1"
 
-  cors_origins: "*"
+  # CORS_ORIGINS is env-only (comma-separated). Never use "*" in production.
   db_echo: false
 
   ai_service_url: "http://localhost:8001"

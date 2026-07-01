@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Render LiveKit server config from template + .env secrets (never commit output).
 set -euo pipefail
 

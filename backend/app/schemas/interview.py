@@ -104,6 +104,65 @@ class CandidateDossier(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SyncCodeBody(BaseModel):
+    code: str = ""
+
+
+class SyncSandboxBody(BaseModel):
+    files: dict[str, str] = Field(default_factory=dict)
+
+
+class SyncAnswersBody(BaseModel):
+    answers: dict = Field(default_factory=dict)
+
+
+class RunCodeBody(BaseModel):
+    code: str = ""
+
+
+class RunCodeResponse(BaseModel):
+    stdout: str = ""
+    stderr: str = ""
+    exit_code: int = 0
+    timed_out: bool = False
+    test_results: list[dict] = Field(default_factory=list)
+    tests_passed: int = 0
+    tests_total: int = 0
+
+
+class SubmitAssignmentBody(BaseModel):
+    type: str = "coding"
+    code: str | None = None
+    mode: str | None = None
+    files: dict[str, str] | None = None
+    answers: dict | None = None
+
+
+class CodeAssistMessage(BaseModel):
+    role: str
+    content: str
+
+
+class CodeAssistBody(BaseModel):
+    messages: list[CodeAssistMessage] = Field(default_factory=list)
+    code: str = ""
+    language: str = "en"
+
+
+class CodeAssistResponse(BaseModel):
+    reply: str
+    message: str | None = None
+
+
+class ChatBody(BaseModel):
+    message: str
+
+
+class RecordingUploadResponse(BaseModel):
+    ok: bool = True
+    url: str | None = None
+
+
 class InterviewDetail(BaseModel):
     id: str
     candidate_name: str

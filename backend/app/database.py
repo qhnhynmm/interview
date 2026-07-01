@@ -55,6 +55,8 @@ def _migrate_interview_cv_columns() -> None:
         statements.append("ALTER TABLE interviews ADD COLUMN voice VARCHAR(32) DEFAULT 'Puck'")
     if "report_pdf_path" not in existing:
         statements.append("ALTER TABLE interviews ADD COLUMN report_pdf_path VARCHAR(1024)")
+    if "recording_path" not in existing:
+        statements.append("ALTER TABLE interviews ADD COLUMN recording_path VARCHAR(1024)")
 
     with engine.begin() as conn:
         for stmt in statements:

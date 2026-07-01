@@ -221,17 +221,16 @@ export async function sendChat(interviewId, message) {
     }
   }
 
-  // const res = await fetch(`${API}/interviews/${interviewId}/chat`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ message }),
-  // })
-  // if (!res.ok) {
-  //   const err = await res.json().catch(() => ({}))
-  //   throw new Error(err.detail || 'Chat request failed')
-  // }
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${interviewId}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Chat request failed')
+  }
+  return res.json()
 }
 
 export async function reportProctorEvent(interviewId, event) {
@@ -252,20 +251,23 @@ export async function reportProctorEvent(interviewId, event) {
   }
 }
 
-export async function endInterview(interviewId) {
+export async function endInterview(interviewId, { reason = 'completed', detail = '' } = {}) {
   if (USE_MOCK_API) {
     await mockDelay()
     updateMockInterview(interviewId, { status: 'completed' })
     return { ok: true }
   }
 
-  // const res = await fetch(`${API}/interviews/${interviewId}/end`, { method: 'POST' })
-  // if (!res.ok) {
-  //   const err = await res.json().catch(() => ({}))
-  //   throw new Error(err.detail || 'Failed to end interview')
-  // }
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${interviewId}/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason, detail }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to end interview')
+  }
+  return { ok: true }
 }
 
 export async function fetchInterview(interviewId) {
@@ -285,18 +287,17 @@ export async function uploadChunk(interviewId, blob) {
     return { ok: true }
   }
 
-  // const fd = new FormData()
-  // fd.append('file', blob, 'chunk.webm')
-  // const res = await fetch(`${API}/interviews/${interviewId}/recording/chunk`, {
-  //   method: 'POST',
-  //   body: fd,
-  // })
-  // if (!res.ok) {
-  //   const err = await res.json().catch(() => ({}))
-  //   throw new Error(err.detail || 'Chunk upload failed')
-  // }
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const fd = new FormData()
+  fd.append('file', blob, 'chunk.webm')
+  const res = await fetch(`${API}/interviews/${interviewId}/recording/chunk`, {
+    method: 'POST',
+    body: fd,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Chunk upload failed')
+  }
+  return { ok: true }
 }
 
 export async function uploadRecording(interviewId, blob) {
@@ -306,18 +307,17 @@ export async function uploadRecording(interviewId, blob) {
     return { ok: true, url: null }
   }
 
-  // const fd = new FormData()
-  // fd.append('file', blob, 'recording.webm')
-  // const res = await fetch(`${API}/interviews/${interviewId}/recording`, {
-  //   method: 'POST',
-  //   body: fd,
-  // })
-  // if (!res.ok) {
-  //   const err = await res.json().catch(() => ({}))
-  //   throw new Error(err.detail || 'Failed to upload recording')
-  // }
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const fd = new FormData()
+  fd.append('file', blob, 'recording.webm')
+  const res = await fetch(`${API}/interviews/${interviewId}/recording`, {
+    method: 'POST',
+    body: fd,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to upload recording')
+  }
+  return res.json()
 }
 
 export async function downloadReportPdf(interviewId, candidateName) {
@@ -401,17 +401,16 @@ export async function codeAssist(interviewId, messages, code) {
     return mockCodeAssist(messages, code)
   }
 
-  // const res = await fetch(`${API}/interviews/${interviewId}/code-assist`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ messages, code, language: 'python' }),
-  // })
-  // if (!res.ok) {
-  //   const err = await res.json().catch(() => ({}))
-  //   throw new Error(err.detail || 'Assistant request failed')
-  // }
-  // return res.json()
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${interviewId}/code-assist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, code, language: 'python' }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Assistant request failed')
+  }
+  return res.json()
 }
 
 // Assignment endpoints used by CodePanel / SandpackPanel / CognitivePanel.
@@ -420,7 +419,15 @@ export async function syncCode(interviewId, code) {
     updateMockInterview(interviewId, { current_code: code })
     return
   }
-  // await fetch(`${API}/interviews/${interviewId}/sync-code`, { ... })
+  try {
+    await fetch(`${API}/interviews/${interviewId}/sync-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+  } catch (e) {
+    console.warn('[sync-code] failed:', e)
+  }
 }
 
 export async function runCode(interviewId, code) {
@@ -428,8 +435,16 @@ export async function runCode(interviewId, code) {
     await mockDelay(600)
     return mockRunCode(code)
   }
-  // const res = await fetch(`${API}/interviews/${interviewId}/run-code`, { ... })
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${interviewId}/run-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Code execution failed')
+  }
+  return res.json()
 }
 
 export async function submitAssignment(interviewId, body) {
@@ -438,8 +453,16 @@ export async function submitAssignment(interviewId, body) {
     updateMockInterview(interviewId, { assignment_finished: true, ...body })
     return { ok: true }
   }
-  // await fetch(`${API}/interviews/${interviewId}/submit-assignment`, { ... })
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${interviewId}/submit-assignment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Assignment submission failed')
+  }
+  return { ok: true }
 }
 
 export async function syncSandbox(interviewId, files) {
@@ -447,7 +470,15 @@ export async function syncSandbox(interviewId, files) {
     updateMockInterview(interviewId, { sandbox_files: files })
     return
   }
-  // await fetch(`${API}/interviews/${interviewId}/sync-sandbox`, { ... })
+  try {
+    await fetch(`${API}/interviews/${interviewId}/sync-sandbox`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files }),
+    })
+  } catch (e) {
+    console.warn('[sync-sandbox] failed:', e)
+  }
 }
 
 export async function syncAnswers(interviewId, answers) {
@@ -455,5 +486,13 @@ export async function syncAnswers(interviewId, answers) {
     updateMockInterview(interviewId, { cognitive_answers: answers })
     return
   }
-  // await fetch(`${API}/interviews/${interviewId}/sync-answers`, { ... })
+  try {
+    await fetch(`${API}/interviews/${interviewId}/sync-answers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    })
+  } catch (e) {
+    console.warn('[sync-answers] failed:', e)
+  }
 }

@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     inspector_endpoint: str = Field(
         default=_YAML.get("inspector_endpoint", "/api/v1/inspector/evaluate"),
     )
+    coding_assistant_endpoint: str = Field(
+        default=_YAML.get("coding_assistant_endpoint", "/api/v1/coding-assistant/chat"),
+    )
     ai_request_timeout: float = Field(default=float(_YAML.get("ai_request_timeout", 120.0)))
 
     livekit_url: str = Field(default=_YAML.get("livekit_url", "ws://127.0.0.1:7880"))
@@ -78,6 +81,8 @@ class Settings(BaseSettings):
     minio_region: str = Field(default=_YAML.get("minio_region", "us-east-1"))
     minio_bucket_cvs: str = Field(default=_YAML.get("minio_bucket_cvs", "cvs"))
     minio_bucket_reports: str = Field(default=_YAML.get("minio_bucket_reports", "reports"))
+    minio_bucket_recordings: str = Field(default=_YAML.get("minio_bucket_recordings", "recordings"))
+    recording_url_ttl: int = Field(default=int(_YAML.get("recording_url_ttl", 604800)))
     minio_access_key: str = Field(default="", validation_alias="MINIO_ACCESS_KEY")
     minio_secret_key: str = Field(default="", validation_alias="MINIO_SECRET_KEY")
 
@@ -109,6 +114,10 @@ class Settings(BaseSettings):
     @property
     def inspector_url(self) -> str:
         return f"{self.ai_service_url.rstrip('/')}{self.inspector_endpoint}"
+
+    @property
+    def coding_assistant_url(self) -> str:
+        return f"{self.ai_service_url.rstrip('/')}{self.coding_assistant_endpoint}"
 
     @property
     def cors_origin_list(self) -> list[str]:

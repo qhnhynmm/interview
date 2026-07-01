@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
@@ -17,12 +18,22 @@ from app.models.interview import Interview, InterviewStatus, new_interview_id
 from app.models.user import User
 from app.schemas.interview import (
     CandidateDossier,
+    ChatBody,
+    CodeAssistBody,
+    CodeAssistResponse,
     EndInterviewBody,
     InterviewDetail,
     InterviewListItem,
     JoinTokenResponse,
     ProctorEventBody,
+    RecordingUploadResponse,
+    RunCodeBody,
+    RunCodeResponse,
     SlotsResponse,
+    SubmitAssignmentBody,
+    SyncAnswersBody,
+    SyncCodeBody,
+    SyncSandboxBody,
 )
 from app.services.report_worker import ensure_report_scheduled, schedule_report_generation
 from app.services.livekit_proctor import broadcast_proctor_violation
@@ -39,6 +50,9 @@ from app.services.livekit_tokens import (
 from app.services.generate_stream import generate_link_event_stream
 from app.services.object_storage import download_object, is_s3_uri, parse_s3_uri
 from app.services.storage import save_cv
+from app.services.code_runner import run_python_tests
+from app.services.coding_assistant import fetch_code_assist
+from app.services.recording_storage import append_recording_chunk, finalize_recording
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
 logger = logging.getLogger(__name__)
@@ -81,6 +95,29 @@ def _report_pdf_url(row: Interview) -> str | None:
     return f"{settings.api_prefix}/interviews/{row.id}/report.pdf"
 
 
+def _recording_url(row: Interview) -> str | None:
+    if not row.recording_path:
+        return None
+    settings = get_settings()
+    return f"{settings.api_prefix}/interviews/{row.id}/recording"
+
+
+def _get_row(db: Session, interview_id: str) -> Interview:
+    row = db.get(Interview, interview_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+    return row
+
+
+def _coding_from_row(row: Interview) -> dict:
+    assignment = row.assignment or {}
+    coding = assignment.get("coding")
+    if isinstance(coding, dict):
+        return coding
+    legacy = (row.plan or {}).get("coding_assignment")
+    return legacy if isinstance(legacy, dict) else {}
+
+
 def _to_dossier(row: Interview) -> CandidateDossier:
     return CandidateDossier(
         id=row.id,
@@ -93,7 +130,7 @@ def _to_dossier(row: Interview) -> CandidateDossier:
         cv_filename=row.cv_filename,
         cv_text=row.cv_text,
         cv_fields=row.cv_fields,
-        recording_url=None,
+        recording_url=_recording_url(row),
         report=row.report,
         report_pdf_url=_report_pdf_url(row),
         conversation_history=list(row.conversation_history or []),
@@ -367,6 +404,189 @@ def end_interview(
         body.detail,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{interview_id}/sync-code", status_code=status.HTTP_204_NO_CONTENT)
+def sync_code(
+    interview_id: str,
+    body: SyncCodeBody,
+    db: Session = Depends(get_db),
+) -> Response:
+    row = _get_row(db, interview_id)
+    row.current_code = body.code
+    if row.status == InterviewStatus.scheduled:
+        row.status = InterviewStatus.in_progress
+    db.add(row)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{interview_id}/sync-sandbox", status_code=status.HTTP_204_NO_CONTENT)
+def sync_sandbox(
+    interview_id: str,
+    body: SyncSandboxBody,
+    db: Session = Depends(get_db),
+) -> Response:
+    row = _get_row(db, interview_id)
+    row.sandbox_files = body.files
+    if row.status == InterviewStatus.scheduled:
+        row.status = InterviewStatus.in_progress
+    db.add(row)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{interview_id}/sync-answers", status_code=status.HTTP_204_NO_CONTENT)
+def sync_answers(
+    interview_id: str,
+    body: SyncAnswersBody,
+    db: Session = Depends(get_db),
+) -> Response:
+    row = _get_row(db, interview_id)
+    row.cognitive_answers = body.answers
+    if row.status == InterviewStatus.scheduled:
+        row.status = InterviewStatus.in_progress
+    db.add(row)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{interview_id}/run-code", response_model=RunCodeResponse)
+def run_code(
+    interview_id: str,
+    body: RunCodeBody,
+    db: Session = Depends(get_db),
+) -> RunCodeResponse:
+    row = _get_row(db, interview_id)
+    coding = _coding_from_row(row)
+    result = run_python_tests(code=body.code, coding=coding)
+    row.current_code = body.code
+    row.last_run_result = result
+    if row.status == InterviewStatus.scheduled:
+        row.status = InterviewStatus.in_progress
+    db.add(row)
+    db.commit()
+    return RunCodeResponse(**result)
+
+
+@router.post("/{interview_id}/submit-assignment", status_code=status.HTTP_204_NO_CONTENT)
+def submit_assignment(
+    interview_id: str,
+    body: SubmitAssignmentBody,
+    db: Session = Depends(get_db),
+) -> Response:
+    row = _get_row(db, interview_id)
+    if body.code is not None:
+        row.current_code = body.code
+    if body.files is not None:
+        row.sandbox_files = body.files
+    if body.answers is not None:
+        row.cognitive_answers = body.answers
+    row.assignment_finished = True
+    if row.status == InterviewStatus.scheduled:
+        row.status = InterviewStatus.in_progress
+    db.add(row)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{interview_id}/code-assist", response_model=CodeAssistResponse)
+async def code_assist(
+    interview_id: str,
+    body: CodeAssistBody,
+    db: Session = Depends(get_db),
+) -> CodeAssistResponse:
+    row = _get_row(db, interview_id)
+    messages = [{"role": m.role, "content": m.content} for m in body.messages]
+    reply = await fetch_code_assist(
+        interview_id=interview_id,
+        messages=messages,
+        code=body.code,
+        language=body.language or row.language or "en",
+        position=row.position,
+    )
+    return CodeAssistResponse(reply=reply, message=reply)
+
+
+@router.post("/{interview_id}/chat")
+async def send_chat(
+    interview_id: str,
+    body: ChatBody,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Legacy text chat — appends candidate message to transcript."""
+    row = _get_row(db, interview_id)
+    message = body.message.strip()
+    if not message:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="message is required")
+    history = list(row.conversation_history or [])
+    history.append({"role": "candidate", "content": message, "ts": datetime.now(UTC).timestamp()})
+    row.conversation_history = history
+    if row.status == InterviewStatus.scheduled:
+        row.status = InterviewStatus.in_progress
+    db.add(row)
+    db.commit()
+    return {
+        "reply": "This interview uses voice — please speak to the AI interviewer.",
+    }
+
+
+@router.post("/{interview_id}/recording/chunk", status_code=status.HTTP_204_NO_CONTENT)
+async def upload_recording_chunk(
+    interview_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> Response:
+    _get_row(db, interview_id)
+    data = await file.read()
+    append_recording_chunk(interview_id, data)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{interview_id}/recording", response_model=RecordingUploadResponse)
+async def upload_recording(
+    interview_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> RecordingUploadResponse:
+    row = _get_row(db, interview_id)
+    data = await file.read()
+    uri = finalize_recording(interview_id, final_blob=data if data else None)
+    if uri:
+        row.recording_path = uri
+        db.add(row)
+        db.commit()
+    return RecordingUploadResponse(ok=bool(uri), url=_recording_url(row) if uri else None)
+
+
+@router.get("/{interview_id}/recording")
+def download_recording(
+    interview_id: str,
+    db: Session = Depends(get_db),
+    hr_user: User = Depends(require_hr_user_sse),
+) -> Response:
+    row = db.get(Interview, interview_id)
+    if row is None or row.created_by_id != hr_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found")
+    if not row.recording_path:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recording not available")
+    settings = get_settings()
+    try:
+        if is_s3_uri(row.recording_path):
+            bucket, key = parse_s3_uri(row.recording_path)
+            data = download_object(bucket, key)
+        else:
+            data = Path(row.recording_path).read_bytes()
+    except Exception as exc:
+        logger.warning("recording_download_failed interview=%s err=%s", interview_id, exc)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recording not available") from exc
+
+    safe_name = (row.candidate_name or interview_id).replace(" ", "_")
+    return Response(
+        content=data,
+        media_type="video/webm",
+        headers={"Content-Disposition": f'inline; filename="{safe_name}_recording.webm"'},
+    )
 
 
 @router.post("/generate-link/stream")

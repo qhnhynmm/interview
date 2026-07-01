@@ -11,8 +11,48 @@ Aurelia phục vụ hai nhóm người dùng trên cùng một hệ thống:
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/01-home.png" alt="Trang chủ — giới thiệu 4-agent panel và luồng phỏng vấn" width="720" />
+  <br /><em>Trang chủ — HR workspace &amp; agent panel</em>
+</p>
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/03-interview-form.png" alt="Form tạo interview — CV, JD, slot" />
+      <br /><sub><b>Tạo interview</b> — upload CV, JD, chọn ngôn ngữ &amp; giọng AI</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/04-results.png" alt="Bảng kết quả phỏng vấn" />
+      <br /><sub><b>Kết quả</b> — danh sách buổi phỏng vấn &amp; trạng thái</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/05-interview-room.png" alt="Quy định phỏng vấn trước khi vào phòng" />
+      <br /><sub><b>Phòng phỏng vấn</b> — quy định &amp; proctoring trước khi join LiveKit</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/06-candidate-profile.png" alt="Hồ sơ ứng viên — CV, report, transcript" />
+      <br /><sub><b>Hồ sơ ứng viên</b> — CV extract, recording, report, transcript</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/02-login.png" alt="Trang đăng nhập HR" width="480" />
+  <br /><em>Đăng nhập HR</em>
+</p>
+
+> Tái tạo screenshots sau khi đổi UI: `node scripts/capture-screenshots.mjs --base http://localhost:8080 --token <JWT> --interview <itv-id>`
+
+---
+
 ## Mục lục
 
+- [Screenshots](#screenshots)
 - [Tính năng chính](#tính-năng-chính)
 - [Kiến trúc](#kiến-trúc)
 - [Tech stack](#tech-stack)

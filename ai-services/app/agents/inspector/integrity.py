@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
+
+from app.schemas.inspector.scorecard import IntegritySummary
 
 # Penalty weight per incident (deduped) by violation kind.
 _KIND_WEIGHTS: dict[str, int] = {
@@ -84,3 +86,48 @@ def compute_integrity(events: list[dict[str, Any]]) -> dict[str, Any]:
         "unsupported_checks": len(unsupported),
         "method": "deterministic_v1",
     }
+
+
+def summarize_integrity(events: list[dict[str, Any]], *, language: str = "en") -> IntegritySummary:
+    """Spec-aligned integrity summary — deterministic, no LLM."""
+    incidents = dedupe_incidents(events)
+    by_kind: dict[str, int] = {}
+    high = 0
+    for event in incidents:
+        kind = str(event.get("kind") or "unknown")
+        by_kind[kind] = by_kind.get(kind, 0) + 1
+        if str(event.get("severity") or "").lower() == "high":
+            high += 1
+
+    total = len(incidents)
+    if total == 0:
+        risk: Literal["clean", "low", "medium", "high"] = "clean"
+    elif high >= 2 or total >= 6:
+        risk = "high"
+    elif high >= 1 or total >= 3:
+        risk = "medium"
+    else:
+        risk = "low"
+
+    if language == "vi":
+        notes = {
+            "clean": "Không ghi nhận vi phạm proctoring.",
+            "low": f"{total} sự kiện proctoring — rủi ro thấp.",
+            "medium": f"{total} sự kiện ({high} mức cao) — rủi ro trung bình.",
+            "high": f"{total} sự kiện ({high} mức cao) — rủi ro cao, cần xem xét kỹ.",
+        }
+    else:
+        notes = {
+            "clean": "No proctoring violations recorded.",
+            "low": f"{total} proctoring incident(s) - low risk.",
+            "medium": f"{total} incident(s) ({high} high severity) - medium risk.",
+            "high": f"{total} incident(s) ({high} high severity) - high risk, review carefully.",
+        }
+
+    return IntegritySummary(
+        total_violations=total,
+        high_severity_count=high,
+        counts_by_kind=by_kind,
+        risk=risk,
+        note=notes[risk],
+    )

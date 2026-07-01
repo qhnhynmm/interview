@@ -1,3 +1,5 @@
+import asyncio
+import json
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Literal
@@ -7,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_hr_user
+from app.api.deps import require_hr_user, require_hr_user_sse
 from app.config import get_settings
 from app.constants.voices import normalize_live_voice
 from app.database import get_db
@@ -35,6 +37,7 @@ from app.services.livekit_tokens import (
     mark_candidate_joined,
 )
 from app.services.generate_stream import generate_link_event_stream
+from app.services.object_storage import download_object, is_s3_uri, parse_s3_uri
 from app.services.storage import save_cv
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
@@ -71,6 +74,13 @@ def _to_list_item(row: Interview) -> InterviewListItem:
     )
 
 
+def _report_pdf_url(row: Interview) -> str | None:
+    if not row.report_pdf_path:
+        return None
+    settings = get_settings()
+    return f"{settings.api_prefix}/interviews/{row.id}/report.pdf"
+
+
 def _to_dossier(row: Interview) -> CandidateDossier:
     return CandidateDossier(
         id=row.id,
@@ -85,7 +95,7 @@ def _to_dossier(row: Interview) -> CandidateDossier:
         cv_fields=row.cv_fields,
         recording_url=None,
         report=row.report,
-        report_pdf_url=None,
+        report_pdf_url=_report_pdf_url(row),
         conversation_history=list(row.conversation_history or []),
     )
 
@@ -170,6 +180,52 @@ async def join_token(
     return JoinTokenResponse(**payload)
 
 
+@router.get("/{interview_id}/report")
+def get_interview_report(
+    interview_id: str,
+    db: Session = Depends(get_db),
+    hr_user: User = Depends(require_hr_user),
+) -> dict:
+    row = db.get(Interview, interview_id)
+    if row is None or row.created_by_id != hr_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+    if row.report is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not ready")
+    return row.report
+
+
+@router.get("/{interview_id}/report.pdf")
+def download_interview_report_pdf(
+    interview_id: str,
+    db: Session = Depends(get_db),
+    hr_user: User = Depends(require_hr_user),
+) -> Response:
+    row = db.get(Interview, interview_id)
+    if row is None or row.created_by_id != hr_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+    if not row.report_pdf_path:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF report not available")
+
+    settings = get_settings()
+    try:
+        if is_s3_uri(row.report_pdf_path):
+            bucket, key = parse_s3_uri(row.report_pdf_path)
+            data = download_object(bucket, key)
+        else:
+            path = settings.storage_path / row.report_pdf_path
+            data = path.read_bytes()
+    except Exception as exc:
+        logger.warning("report_pdf_download_failed interview=%s err=%s", interview_id, exc)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF report not available") from exc
+
+    safe_name = (row.candidate_name or interview_id).replace(" ", "_")
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}_report.pdf"'},
+    )
+
+
 @router.get("/{interview_id}/dossier", response_model=CandidateDossier)
 def get_candidate_dossier(
     interview_id: str,
@@ -184,6 +240,45 @@ def get_candidate_dossier(
     ensure_report_scheduled(db, row)
     db.refresh(row)
     return _to_dossier(row)
+
+
+@router.get("/{interview_id}/events")
+async def interview_events(
+    interview_id: str,
+    db: Session = Depends(get_db),
+    hr_user: User = Depends(require_hr_user_sse),
+) -> StreamingResponse:
+    """SSE stream — emits status changes and report_ready when evaluation completes."""
+    row = db.get(Interview, interview_id)
+    if row is None or row.created_by_id != hr_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found")
+
+    async def _stream():
+        yield f"data: {json.dumps({'event': 'connected', 'interview_id': interview_id})}\n\n"
+        last_status = row.status.value
+        idle_ticks = 0
+        while idle_ticks < 90:
+            db.refresh(row)
+            status_val = row.status.value
+            if status_val != last_status:
+                last_status = status_val
+                payload = {"event": "status", "interview_id": interview_id, "status": status_val}
+                yield f"data: {json.dumps(payload)}\n\n"
+            if row.report is not None and status_val == InterviewStatus.completed.value:
+                payload = {
+                    "event": "report_ready",
+                    "interview_id": interview_id,
+                    "overall_score": row.report.get("overall_score"),
+                }
+                yield f"data: {json.dumps(payload)}\n\n"
+                break
+            if status_val == InterviewStatus.evaluating.value and row.report is None:
+                ensure_report_scheduled(db, row)
+            idle_ticks += 1
+            await asyncio.sleep(2)
+        yield f"data: {json.dumps({'event': 'done', 'interview_id': interview_id})}\n\n"
+
+    return StreamingResponse(_stream(), media_type="text/event-stream")
 
 
 @router.get("/{interview_id}", response_model=InterviewDetail)

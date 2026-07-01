@@ -1,16 +1,21 @@
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from app.schemas.inspector.evaluation import EvaluationRequest, EvaluationResponse
 
 
-class InspectorEvaluateRequest(BaseModel):
-    interview_id: str
-    transcript: list[dict[str, Any]] = Field(default_factory=list)
-    assignment_result: dict[str, Any] | None = None
-    proctoring_events: list[dict[str, Any]] = Field(default_factory=list)
-    plan: dict[str, Any] = Field(default_factory=dict)
+class InspectorEvaluateRequest(EvaluationRequest):
+    """Backward-compatible — accepts legacy `proctoring_events` field."""
+
+    proctoring_events: list[dict[str, Any]] | None = None
+
+    @model_validator(mode="after")
+    def _merge_proctoring(self) -> "InspectorEvaluateRequest":
+        if self.proctoring_events and not self.proctor_events:
+            self.proctor_events = list(self.proctoring_events)
+        return self
 
 
-class InspectorEvaluateResponse(BaseModel):
-    report: dict[str, Any]
+class InspectorEvaluateResponse(EvaluationResponse):
     meta: dict = Field(default_factory=dict)

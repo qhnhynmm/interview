@@ -1,4 +1,5 @@
 from app.agents.base import AgentBase
+from app.agents.coding_assistant.prompts import build_system_prompt
 from app.config import get_settings
 from app.schemas.api.coding_assistant import CodingAssistantRequest
 
@@ -8,9 +9,11 @@ class CodingAssistantAgent(AgentBase):
 
     async def run(self, request: CodingAssistantRequest) -> tuple[str, dict]:
         settings = get_settings()
-        system = (
-            "You are a concise coding assistant for a live interview. "
-            "Give hints, not full solutions. Respond in the interview language."
+        system = build_system_prompt(
+            language=request.language,
+            position=getattr(request, "position", "") or "",
+            assignment_title=getattr(request, "assignment_title", "") or "",
+            assignment_mode=getattr(request, "assignment_mode", "") or "",
         )
         messages = [{"role": "system", "content": system}]
         for msg in request.messages:
@@ -28,8 +31,14 @@ class CodingAssistantAgent(AgentBase):
             return text, {"agent": self.name, "llm_used": True}
 
         last = request.messages[-1].content if request.messages else ""
-        fallback = (
-            "Try breaking the problem into smaller steps. "
-            f"For your last question ({last[:80]}...), consider edge cases first."
-        )
+        if request.language.lower().startswith("vi"):
+            fallback = (
+                "Thử chia bài toán thành các bước nhỏ hơn. "
+                f"Với câu hỏi gần nhất ({last[:80]}...), hãy xem xét edge case trước."
+            )
+        else:
+            fallback = (
+                "Try breaking the problem into smaller steps. "
+                f"For your last question ({last[:80]}...), consider edge cases first."
+            )
         return fallback, {"agent": self.name, "llm_used": False}

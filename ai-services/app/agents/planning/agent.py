@@ -16,9 +16,9 @@ from app.agents.planning.grounding import (
 )
 from app.agents.planning.llm import PlanningLLM
 from app.agents.planning.prompts import (
-    ASSIGNMENT_BRIEF_SYSTEM,
-    EVALUATION_BRIEF_SYSTEM,
-    INTERVIEW_BRIEF_SYSTEM,
+    assignment_brief_system,
+    evaluation_brief_system,
+    interview_brief_system,
 )
 from app.infra.progress import ProgressFn
 from app.infra.tracing import set_span_attributes, span_ok, trace_span
@@ -40,15 +40,28 @@ def _build_shared_context(request: PlanRequest, facts: GroundingFacts) -> str:
         else "N/A"
     )
     directive = facts.assignment
+    duration = duration_for_seniority(facts.seniority_level)
+    lang = (request.language or "en").strip().lower()
+    hr_block = request.special_requirements or "none"
+    hr_priority = ""
+    if (request.special_requirements or "").strip():
+        hr_priority = (
+            "\nHR PRIORITY: These notes override generic interview flow when they conflict. "
+            "Weave them into competencies, questions, and assignment focus."
+        )
 
-    return f"""POSITION: {facts.position}
+    return f"""INTERVIEW_LANGUAGE: {lang}
+TARGET_DURATION_MINUTES: {duration}
+CANDIDATE: {request.candidate_name or 'unknown'}
+
+POSITION: {facts.position}
 JD:
 {request.jd_text[:3500]}
 
 CV:
 {request.cv_markdown[:3500]}
 
-HR NOTES: {request.special_requirements or 'none'}
+HR NOTES: {hr_block}{hr_priority}
 
 GROUNDING FACTS BLOCK:
 seniority_level: {facts.seniority_level}
@@ -215,6 +228,7 @@ async def _run_planning_agent(
         )
 
     context = _build_shared_context(request, facts)
+    lang = request.language or "en"
 
     await _emit_progress(
         progress,
@@ -224,7 +238,7 @@ async def _run_planning_agent(
     interview_brief = await _generate_brief(
         llm,
         name="interview_brief",
-        system=INTERVIEW_BRIEF_SYSTEM,
+        system=interview_brief_system(lang),
         context=context,
         fallback_fn=lambda: fallback_interview_brief(facts, request.cv_markdown),
         degraded_counter=degraded_briefs,
@@ -238,7 +252,7 @@ async def _run_planning_agent(
     evaluation_brief = await _generate_brief(
         llm,
         name="evaluation_brief",
-        system=EVALUATION_BRIEF_SYSTEM,
+        system=evaluation_brief_system(lang),
         context=context,
         fallback_fn=lambda: fallback_evaluation_brief(facts),
         degraded_counter=degraded_briefs,
@@ -252,7 +266,7 @@ async def _run_planning_agent(
     assignment_body = await _generate_brief(
         llm,
         name="assignment_brief",
-        system=ASSIGNMENT_BRIEF_SYSTEM,
+        system=assignment_brief_system(lang),
         context=context,
         fallback_fn=lambda: fallback_assignment_brief(facts),
         degraded_counter=degraded_briefs,

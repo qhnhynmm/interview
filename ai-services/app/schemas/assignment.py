@@ -87,6 +87,7 @@ class AssignmentRequest(BaseModel):
     coding_mode: str | None = None
     assignment_brief: str = ""
     special_requirements: str | None = None
+    language: str = "en"
     cv_text: str | None = None
 
     @model_validator(mode="after")

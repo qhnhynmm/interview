@@ -45,15 +45,18 @@ async def _generate_report(interview_id: str) -> None:
             if row.status not in (InterviewStatus.evaluating, InterviewStatus.completed):
                 return
 
-            raw = await fetch_inspector_report(row)
+            raw, pdf_path, _markdown = await fetch_inspector_report(row)
             row.report = normalize_report(row, raw)
+            if pdf_path:
+                row.report_pdf_path = pdf_path
             row.status = InterviewStatus.completed
             db.add(row)
             db.commit()
             logger.info(
-                "report_ready interview=%s score=%s",
+                "report_ready interview=%s score=%s pdf=%s",
                 interview_id,
                 row.report.get("overall_score"),
+                bool(pdf_path),
             )
         finally:
             db.close()

@@ -21,5 +21,13 @@ async def evaluate(body: InspectorEvaluateRequest) -> InspectorEvaluateResponse:
             overall_score=report.get("overall_score"),
             transcript_turns=report.get("transcript_turns"),
             llm_used=meta.get("llm_used"),
+            track=meta.get("track"),
         )
-        return InspectorEvaluateResponse(report=report, meta=meta)
+        return InspectorEvaluateResponse(
+            interview_id=body.interview_id,
+            report=report,
+            report_markdown=meta.get("report_markdown", ""),
+            pdf_base64=meta.get("pdf_base64", ""),
+            source="inspector-agent",
+            meta=meta,
+        )

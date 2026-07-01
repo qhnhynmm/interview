@@ -16,7 +16,7 @@ from app.agents.assignment.domain.fallbacks import (
     build_fallback_assignment,
 )
 from app.agents.assignment.domain.normalize import _STYLES_IMPORT_RE, normalize_assignment
-from app.agents.assignment.domain.prompts import SYSTEM_INSTRUCTIONS, build_user_prompt
+from app.agents.assignment.domain.prompts import build_user_prompt, system_instructions
 from app.agents.assignment.domain.tools import search_problem_bank
 from app.config import Settings, get_settings
 from app.infra.progress import ProgressFn
@@ -66,7 +66,7 @@ def _validate_assignment_rules(assignment: Assignment, directive: AssignmentDire
             raise ValueError("cognitive test must have 10 questions")
 
 
-def _build_agent(settings: Settings):
+def _build_agent(settings: Settings, *, language: str = "en"):
     client = OpenAIChatCompletionClient(
         model=settings.assignment_model_effective,
         api_key=settings.llm_api_key,
@@ -74,13 +74,13 @@ def _build_agent(settings: Settings):
     )
     return client.as_agent(
         name="AssignmentAgent",
-        instructions=SYSTEM_INSTRUCTIONS,
+        instructions=system_instructions(language),
         tools=[search_problem_bank],
     )
 
 
 async def _run_maf_once(req: AssignmentRequest, settings: Settings) -> str:
-    agent = _build_agent(settings)
+    agent = _build_agent(settings, language=req.language or "en")
     schema = json.dumps(Assignment.model_json_schema())
     prompt = (
         f"{build_user_prompt(req)}\n\n"

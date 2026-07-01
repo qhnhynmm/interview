@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class LLMClient:
-    """OpenAI-compatible chat client (MaaS gateway)."""
+    """OpenAI-compatible chat client (Gemini or MaaS gateway)."""
 
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
@@ -18,6 +18,12 @@ class LLMClient:
     @property
     def enabled(self) -> bool:
         return self._settings.llm_enabled
+
+    def _auth_headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self._settings.llm_api_key}"}
+
+    def _chat_url(self) -> str:
+        return f"{self._settings.llm_base_url.rstrip('/')}/chat/completions"
 
     async def chat_json(
         self,
@@ -42,12 +48,14 @@ class LLMClient:
             ],
             "response_format": {"type": "json_object"},
         }
-        headers = {"Authorization": f"Bearer {self._settings.openai_api_key}"}
-        url = f"{self._settings.openai_base_url.rstrip('/')}/chat/completions"
 
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.post(url, headers=headers, json=body)
+                response = await client.post(
+                    self._chat_url(),
+                    headers=self._auth_headers(),
+                    json=body,
+                )
                 response.raise_for_status()
                 payload = response.json()
                 content = payload["choices"][0]["message"]["content"]
@@ -74,12 +82,14 @@ class LLMClient:
             "max_tokens": max_tokens,
             "messages": messages,
         }
-        headers = {"Authorization": f"Bearer {self._settings.openai_api_key}"}
-        url = f"{self._settings.openai_base_url.rstrip('/')}/chat/completions"
 
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.post(url, headers=headers, json=body)
+                response = await client.post(
+                    self._chat_url(),
+                    headers=self._auth_headers(),
+                    json=body,
+                )
                 response.raise_for_status()
                 payload = response.json()
                 return payload["choices"][0]["message"]["content"]

@@ -16,6 +16,7 @@ async def lifespan(_app: FastAPI):
     init_db()
     if settings.minio_enabled:
         ensure_bucket(settings.minio_bucket_cvs)
+        ensure_bucket(settings.minio_bucket_reports)
     if not settings.gemini_api_key:
         import logging
 

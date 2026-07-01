@@ -1,5 +1,5 @@
 import { API } from '@/constants/api.js'
-import { authHeaders } from '@/utils/auth.js'
+import { authHeaders, getToken } from '@/utils/auth.js'
 import { STATUS_MAP } from '@/constants/result.js'
 import { USE_MOCK_API } from '@/constants/mock.js'
 import { mockDelay } from '@/mocks/delay.js'
@@ -337,16 +337,23 @@ export async function downloadReportPdf(interviewId, candidateName) {
     return
   }
 
-  // const res = await fetch(`${API}/interviews/${interviewId}/report.pdf`, {
-  //   headers: authHeaders(),
-  // })
-  // if (!res.ok) {
-  //   const err = await res.json().catch(() => ({}))
-  //   throw new Error(err.detail || 'PDF report not available')
-  // }
-  // const blob = await res.blob()
-  // ...
-  throw new Error('Backend API is disabled. Set USE_MOCK_API = true in src/constants/mock.js')
+  const res = await fetch(`${API}/interviews/${interviewId}/report.pdf`, {
+    headers: authHeaders(),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'PDF report not available')
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const safeName = (candidateName || interviewId).replace(/\s+/g, '_')
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `danh-gia-${safeName}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
 
 export async function fetchCandidate(candidateId) {
@@ -373,16 +380,19 @@ export function subscribeToEvents(interviewId, onEvent) {
     return () => clearTimeout(timer)
   }
 
-  // const es = new EventSource(`${API}/interviews/${interviewId}/events`)
-  // es.onmessage = (e) => {
-  //   try {
-  //     const msg = JSON.parse(e.data)
-  //     if (msg.event !== 'connected') onEvent(msg)
-  //   } catch { /* ignore malformed SSE payloads */ }
-  // }
-  // es.onerror = () => es.close()
-  // return () => es.close()
-  return () => {}
+  const token = getToken()
+  const url = token
+    ? `${API}/interviews/${interviewId}/events?token=${encodeURIComponent(token)}`
+    : `${API}/interviews/${interviewId}/events`
+  const es = new EventSource(url)
+  es.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data)
+      if (msg.event && msg.event !== 'connected' && msg.event !== 'done') onEvent(msg)
+    } catch { /* ignore malformed SSE payloads */ }
+  }
+  es.onerror = () => es.close()
+  return () => es.close()
 }
 
 export async function codeAssist(interviewId, messages, code) {

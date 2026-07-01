@@ -194,6 +194,12 @@ class Settings(BaseSettings):
         return self.assignment_model
 
     @property
+    def inspector_model_effective(self) -> str:
+        if self.effective_llm_provider == "gemini" and self.gemini_model.strip():
+            return self.gemini_model.strip()
+        return self.inspector_model
+
+    @property
     def interview_llm_api_key(self) -> str:
         if self.gemini_api_key.strip():
             return self.gemini_api_key.strip()

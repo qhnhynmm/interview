@@ -15,8 +15,10 @@ from app.agents.interview.mcp_client import MCPClient
 from app.agents.interview.proctoring import ProctoringHandler
 from app.agents.interview.prompts import build_greeting, build_system_instructions, extract_interview_context
 from app.agents.interview.session import InterviewSession
+from app.agents.interview.transcript_recorder import TranscriptRecorder
 from app.config import Settings, get_settings
 from app.infra.backend_client import BackendClient
+from app.infra.mcp_client import build_mcp_servers
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +75,17 @@ class VoicePipeline:
         self._settings = settings or get_settings()
 
     def system_instructions(self) -> str:
+        plan = self.session.plan
         return build_system_instructions(
-            interview_brief=self.session.plan.get("interview_brief", ""),
-            candidate_name=self.session.plan.get("candidate_name", ""),
-            position=self.session.plan.get("position", ""),
+            interview_brief=plan.get("interview_brief", ""),
+            candidate_name=plan.get("candidate_name", ""),
+            position=plan.get("position", ""),
             language=self.session.language,
+            duration_minutes=plan.get("duration_minutes"),
+            special_requirements=plan.get("special_requirements", ""),
+            competencies=plan.get("competencies"),
+            interview_id=self.session.interview_id,
+            has_coding_assignment=plan.get("has_coding_assignment", True),
         )
 
     def greeting_text(self) -> str:
@@ -113,6 +121,7 @@ class VoicePipeline:
     async def run(self, ctx: JobContext) -> None:
         realtime = self.build_realtime_model()
         backend = BackendClient(self._settings)
+        mcp_servers = build_mcp_servers(self._settings)
 
         # Gemini Live uses server-side turn detection — allow_interruptions must be True.
         allow_interruptions = True
@@ -121,12 +130,18 @@ class VoicePipeline:
             instructions=self.system_instructions(),
             llm=realtime,
             allow_interruptions=allow_interruptions,
+            mcp_servers=mcp_servers,
         )
         session = AgentSession(
             llm=realtime,
             allow_interruptions=allow_interruptions,
             min_endpointing_delay=self._settings.silence_threshold_ms / 1000.0,
+            mcp_servers=mcp_servers,
         )
+
+        mcp_client = MCPClient(self._settings)
+        recorder = TranscriptRecorder(self.session.interview_id, mcp_client)
+        recorder.attach(session)
 
         disconnected = asyncio.Event()
 
@@ -159,6 +174,19 @@ class VoicePipeline:
 
         greeting = self.greeting_text()
         await self.publish_agent_message(ctx.room, greeting)
+        try:
+            await mcp_client.call(
+                "append_transcript_turn",
+                interview_id=self.session.interview_id,
+                role="agent",
+                content=greeting,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to seed greeting transcript for %s",
+                self.session.interview_id,
+                exc_info=True,
+            )
         logger.info(
             "Speaking greeting for interview %s (gemini-live, language=%s, voice=%s)",
             self.session.interview_id,

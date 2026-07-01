@@ -171,4 +171,10 @@ No markdown fences. Keys:
 seniority_level, seniority_reason, domain, required_skills, mandatory_skills,
 evidenced_skills, skills_evidence[{name,years,evidence}], skill_gaps,
 competencies[{name,weight}], assignment{type,mode,ai_assistant,difficulty}.
-Weights are relative (renormalized later). Keep evidence quotes under 120 chars."""
+Weights are relative (renormalized later). Keep evidence quotes under 120 chars.
+
+CRITICAL — do NOT invent CV facts:
+- evidenced_skills MUST be skills explicitly supported by the CV text (projects, tools, employers).
+- skills_evidence[].evidence MUST be a short verbatim quote or paraphrase from the CV — never fabricate employers, metrics, or tools.
+- skill_gaps = required/must-have JD skills NOT evidenced in the CV.
+- If the CV is sparse, return fewer evidenced_skills rather than guessing."""

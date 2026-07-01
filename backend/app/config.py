@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     minio_secure: bool = Field(default=bool(_YAML.get("minio_secure", False)))
     minio_region: str = Field(default=_YAML.get("minio_region", "us-east-1"))
     minio_bucket_cvs: str = Field(default=_YAML.get("minio_bucket_cvs", "cvs"))
+    minio_bucket_reports: str = Field(default=_YAML.get("minio_bucket_reports", "reports"))
     minio_access_key: str = Field(default="", validation_alias="MINIO_ACCESS_KEY")
     minio_secret_key: str = Field(default="", validation_alias="MINIO_SECRET_KEY")
 

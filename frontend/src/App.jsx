@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import './App.css'
 import { Icon } from './components/icons.jsx'
 import Home from './legacy-pages/Home.jsx'
@@ -13,17 +14,42 @@ import { fetchMe, logout } from './utils/auth.js'
 import { POLL_MS, TABS } from './constants/app.js'
 
 const PROTECTED = new Set(['interview', 'result'])
+const VALID_TABS = new Set(TABS.map((t) => t.id))
+
+function tabFromSearch(params) {
+  const p = params.get('tab')
+  return p && VALID_TABS.has(p) ? p : 'home'
+}
+
+function urlForTab(id) {
+  return id === 'home' ? '/' : `/?tab=${encodeURIComponent(id)}`
+}
 
 export default function App() {
-  const [tab, setTab] = useState('home')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [tab, setTab] = useState(() => tabFromSearch(searchParams))
 
-  // Safe client-only initial tab from URL (prevents window is not defined during SSR)
+  const applyTab = useCallback(
+    (id) => {
+      if (!VALID_TABS.has(id)) return
+      setTab(id)
+      const next = urlForTab(id)
+      if (typeof window !== 'undefined') {
+        const current = window.location.pathname + window.location.search
+        if (current !== next) {
+          router.replace(next, { scroll: false })
+        }
+      }
+    },
+    [router],
+  )
+
+  // Browser back/forward and direct links (?tab=interview)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const p = new URLSearchParams(window.location.search).get('tab')
-      if (p) setTab(p)
-    }
-  }, [])
+    const fromUrl = tabFromSearch(searchParams)
+    setTab((prev) => (prev === fromUrl ? prev : fromUrl))
+  }, [searchParams])
   const [interviews, setInterviews] = useState([])
   const [loadError, setLoadError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -82,10 +108,10 @@ export default function App() {
       }
       setAuthView(null)
       setPendingTab(null)
-      setTab(id)
+      applyTab(id)
       if (id === 'result') refresh()
     },
-    [user, refresh],
+    [user, refresh, applyTab],
   )
 
   async function handleAuthSuccess() {
@@ -94,7 +120,7 @@ export default function App() {
     setAuthView(null)
     const dest = pendingTab ?? 'interview'
     setPendingTab(null)
-    setTab(dest)
+    applyTab(dest)
     if (dest === 'result') refresh()
   }
 
@@ -102,7 +128,7 @@ export default function App() {
     logout()
     setUser(false)
     setDropdownOpen(false)
-    setTab('home')
+    applyTab('home')
     setAuthView(null)
     setPendingTab(null)
   }
@@ -208,7 +234,7 @@ export default function App() {
               if (!PROTECTED.has(t.id)) {
                 setAuthView(null)
                 setPendingTab(null)
-                setTab(t.id)
+                applyTab(t.id)
               } else {
                 selectTab(t.id)
               }

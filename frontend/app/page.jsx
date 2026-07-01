@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import HRDashboardClient from './HRDashboardClient'
 
 /** @type {import('next').Metadata} */
@@ -11,5 +12,9 @@ export const metadata = {
 }
 
 export default function RootHRShell() {
-  return <HRDashboardClient />
+  return (
+    <Suspense fallback={null}>
+      <HRDashboardClient />
+    </Suspense>
+  )
 }

@@ -125,6 +125,7 @@ async def generate_link_event_stream(
             "cv_text": cv_text,
             "assignment_brief": (plan or {}).get("assignment_brief", ""),
             "special_requirements": special_requirements,
+            "language": lang,
         }
         assignment_url = f"{cfg.ai_service_url.rstrip('/')}/api/v1/assignment/generate/stream"
         assignment: dict[str, Any] | None = None

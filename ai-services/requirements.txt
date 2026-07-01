@@ -10,6 +10,13 @@ agent-framework-openai>=1.0.0
 pytest>=8.3.0
 pytest-asyncio>=0.24.0
 
+# Inspector report — deterministic charts + PDF
+matplotlib==3.9.2
+numpy>=1.26.0
+fpdf2==2.8.7
+markdown==3.7
+Pillow>=10.0.0
+
 # Agent observability — OTLP → Arize Phoenix (OpenTelemetry; no openlit — pip conflict in slim images)
 openinference-semantic-conventions>=0.1.12
 opentelemetry-api>=1.28.0

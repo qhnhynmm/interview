@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Secrets (belt-and-suspenders; root .gitignore also applies)
+.env
+.env.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

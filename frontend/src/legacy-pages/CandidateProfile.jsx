@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Icon, Spinner } from '@/components/icons.jsx'
-import { fetchCandidate } from '@/utils/interviews.js'
+import { downloadReportPdf, fetchCandidate, subscribeToEvents } from '@/utils/interviews.js'
 import { STATUS_LABEL } from '@/constants/candidate.js'
 import '@/App.css'
 
@@ -44,9 +44,23 @@ function ReportBlock({ report }) {
         <span style={{ fontSize: 30, fontWeight: 700, color: 'var(--color-accent)' }}>{overall}</span>
         <span style={{ color: 'var(--color-muted)' }}>/ {max}</span>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--color-muted)', textTransform: 'uppercase' }}>
-          Overall score {report.is_mock && '· mock'}
+          {report.recommendation ? `${report.recommendation.replace(/_/g, ' ')} · ` : ''}
+          Overall {report.is_mock && '· mock'}
         </span>
       </div>
+      {report.headline && (
+        <p style={{ marginBottom: 12, fontSize: 13, fontWeight: 500 }}>{report.headline}</p>
+      )}
+      {report.integrity?.risk && (
+        <div style={{
+          marginBottom: 14, padding: '8px 12px', borderRadius: 8, fontSize: 12,
+          background: report.integrity.risk === 'high' ? 'rgba(239,68,68,0.08)' : 'rgba(100,116,139,0.08)',
+          border: `1px solid ${report.integrity.risk === 'high' ? 'rgba(239,68,68,0.25)' : 'rgba(100,116,139,0.2)'}`,
+        }}>
+          Integrity: <strong>{report.integrity.risk}</strong>
+          {report.integrity.note ? ` — ${report.integrity.note}` : ''}
+        </div>
+      )}
       {scores.length > 0 && (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
@@ -96,13 +110,18 @@ export default function CandidateProfile({ candidateId }) {
       .catch((e) => setError(e.message))
   }, [candidateId])
 
-  // Poll while the report is being generated.
+  // Poll + SSE while the report is being generated.
   useEffect(() => {
     if (!data || data.status !== 'evaluating') return
-    const timer = setInterval(() => {
-      fetchCandidate(candidateId).then(setData).catch(() => {})
-    }, 4000)
-    return () => clearInterval(timer)
+    const refresh = () => fetchCandidate(candidateId).then(setData).catch(() => {})
+    const timer = setInterval(refresh, 8000)
+    const unsub = subscribeToEvents(candidateId, (msg) => {
+      if (msg.event === 'report_ready' || msg.event === 'status') refresh()
+    })
+    return () => {
+      clearInterval(timer)
+      unsub()
+    }
   }, [data?.status, candidateId])
 
   if (error) {
@@ -231,15 +250,15 @@ export default function CandidateProfile({ candidateId }) {
             icon="doc"
             title="Evaluation report"
             action={data.report_pdf_url ? (
-              <a
+              <button
+                type="button"
                 className="btn btn--ghost btn--sm"
-                href={data.report_pdf_url}
-                target="_blank"
-                rel="noreferrer"
-                download
+                onClick={() =>
+                  downloadReportPdf(data.id, data.candidate_name).catch((err) => alert(err.message))
+                }
               >
                 <Icon name="doc" size={13} /> Tải PDF
-              </a>
+              </button>
             ) : null}
           >
             {data.status === 'evaluating' ? (

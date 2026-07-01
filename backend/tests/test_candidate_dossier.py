@@ -132,11 +132,18 @@ def test_candidate_dossier_returns_profile(client: TestClient, monkeypatch):
 
 
 async def _mock_inspector_report(_row):
-    return {
-        "overall_score": 4.0,
-        "competency_scores": {"Technical depth": 4.0},
-        "summary": "Done.",
-    }
+    return (
+        {
+            "overall_score": 4.0,
+            "scorecard": {
+                "competencies": [{"name": "Technical depth", "weight": 1.0, "score": 4.0, "rationale": "OK"}],
+                "summary": "Done.",
+            },
+            "summary": "Done.",
+        },
+        None,
+        "# Done",
+    )
 
 
 def test_report_worker_generates_report(monkeypatch):

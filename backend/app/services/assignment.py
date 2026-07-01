@@ -41,6 +41,7 @@ async def fetch_assignment(
     cv_text: str,
     assignment_brief: str = "",
     special_requirements: str | None = None,
+    language: str = "en",
 ) -> dict:
     settings = get_settings()
     payload = {
@@ -52,6 +53,7 @@ async def fetch_assignment(
         "cv_text": cv_text,
         "assignment_brief": assignment_brief,
         "special_requirements": special_requirements,
+        "language": language,
     }
     url = f"{settings.ai_service_url.rstrip('/')}{settings.assignment_endpoint}"
     try:

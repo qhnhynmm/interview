@@ -1,9 +1,28 @@
 # ── Biến môi trường & secrets ──────────────────────────────────────────────
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
 !**/.env.example
+!.env.*.example
+!**/.env.*.example
+
+# Keys, certs, cloud credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+known_hosts
+credentials.json
+.aws/
+.aws/credentials
+secrets/
+*.secret
 
 # ── Next.js build artifacts ────────────────────────────────────────────────
 .next/
@@ -12,8 +31,9 @@ out/
 # Do NOT ignore next-env.d.ts (recommended by Next.js)
 
 # ── Dữ liệu runtime (CV upload, MinIO local, SQLite…) ───────────────────────
-data/
+/data/
 backend/data/
+!frontend/src/data/
 *.db
 *.sqlite
 *.sqlite3

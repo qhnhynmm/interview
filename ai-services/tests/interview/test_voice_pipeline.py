@@ -11,6 +11,9 @@ def test_voice_pipeline_greeting_and_instructions():
             "candidate_name": "Huy",
             "position": "AI Engineer",
             "interview_brief": "Focus on Python and system design.",
+            "duration_minutes": 50,
+            "special_requirements": "Probe Redis caching",
+            "competencies": [{"name": "Technical depth", "weight": 0.4}],
         },
     )
     pipeline = VoicePipeline(session)
@@ -21,6 +24,21 @@ def test_voice_pipeline_greeting_and_instructions():
     instructions = pipeline.system_instructions()
     assert "Focus on Python and system design." in instructions
     assert "Huy" in instructions
+    assert "append_transcript_turn" in instructions
+    assert "switch_mode" in instructions
+    assert "Probe Redis caching" in instructions
+    assert "50 minutes" in instructions
+
+
+def test_vietnamese_fallback_brief_when_empty():
+    session = InterviewSession(
+        interview_id="itv-vi",
+        language="vi",
+        plan={"candidate_name": "Lan", "position": "Backend Engineer"},
+    )
+    instructions = VoicePipeline(session).system_instructions()
+    assert "Lan" in instructions
+    assert "project kỹ thuật" in instructions or "Phỏng vấn" in instructions
 
 
 def test_build_realtime_model_requires_gemini_key():

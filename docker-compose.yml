@@ -60,7 +60,7 @@ services:
     command:
       - /bin/sh
       - -ec
-      - ./scripts/generate-livekit-config.sh "$${LIVEKIT_TEMPLATE}" "$${LIVEKIT_OUTPUT}"
+      - sh scripts/generate-livekit-config.sh "$${LIVEKIT_TEMPLATE}" "$${LIVEKIT_OUTPUT}"
 
   minio:
     image: minio/minio:latest
